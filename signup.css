@@ -1,0 +1,187 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+body {
+
+    font-family: Arial, sans-serif;
+
+    background: #070b18;
+
+    color: white;
+
+    min-height: 100vh;
+
+}
+
+
+.auth-container {
+
+    min-height: 100vh;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    padding: 20px;
+
+}
+
+
+.auth-card {
+
+    width: 100%;
+
+    max-width: 420px;
+
+    background: #111a33;
+
+    padding: 35px;
+
+    border-radius: 15px;
+
+}
+
+
+.auth-card h1 {
+
+    text-align: center;
+
+    font-size: 32px;
+
+}
+
+
+.subtitle {
+
+    text-align: center;
+
+    color: #aaa;
+
+    margin: 8px 0 30px;
+
+}
+
+
+form {
+
+    display: flex;
+
+    flex-direction: column;
+
+}
+
+
+label {
+
+    margin-bottom: 7px;
+
+    font-size: 14px;
+
+}
+
+
+input {
+
+    width: 100%;
+
+    padding: 13px;
+
+    margin-bottom: 18px;
+
+    border: 1px solid #303b5c;
+
+    border-radius: 8px;
+
+    background: #0d1326;
+
+    color: white;
+
+    outline: none;
+
+}
+
+
+input:focus {
+
+    border-color: #00e5ff;
+
+}
+
+
+button {
+
+    padding: 13px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #00e5ff;
+
+    color: #07101d;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+}
+
+
+button:hover {
+
+    opacity: 0.9;
+
+}
+
+
+#message {
+
+    text-align: center;
+
+    margin-top: 15px;
+
+}
+
+
+.switch {
+
+    text-align: center;
+
+    margin-top: 25px;
+
+    color: #aaa;
+
+}
+
+
+.switch a {
+
+    color: #00e5ff;
+
+    text-decoration: none;
+
+}
+
+
+.switch a:hover {
+
+    text-decoration: underline;
+
+}
+
+
+@media (max-width: 500px) {
+
+    .auth-card {
+
+        padding: 25px 20px;
+
+    }
+
+}

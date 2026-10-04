@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>ChatHub - Chat</title>
+
+    <meta
+        name="description"
+        content="Chat with your friends on ChatHub."
+    >
+
+    <link
+        rel="stylesheet"
+        href="chat.css"
+    >
+
+</head>
+
+
+<body>
+
+    <div class="chat-app">
+
+
+        <!-- =========================
+             SIDEBAR
+        ========================== -->
+
+        <aside class="sidebar">
+
+
+            <div class="sidebar-top">
+
+                <div class="logo">
+
+                    <span>Chat</span>Hub
+
+                </div>
+
+
+                <button
+                    class="new-chat"
+                    id="new-chat"
+                    type="button"
+                >
+
+                    +
+
+                </button>
+
+            </div>
+
+
+
+            <div class="search-box">
+
+                <input
+                    type="text"
+                    id="user-search"
+                    placeholder="Search chats..."
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+
+            <div
+                class="chat-list"
+                id="chat-list"
+            >
+
+                <!-- Users are loaded by chat.js -->
+
+            </div>
+
+
+
+            <div class="sidebar-bottom">
+
+
+                <div class="profile">
+
+                    <div
+                        class="avatar profile-avatar"
+                    >
+                    </div>
+
+
+                    <div>
+
+                        <strong id="username">
+                        </strong>
+
+
+                        <small>
+                            Online
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+
+                <button
+                    id="logout"
+                    type="button"
+                >
+
+                    Logout
+
+                </button>
+
+
+            </div>
+
+        </aside>
+
+
+
+        <!-- =========================
+             MAIN CHAT
+        ========================== -->
+
+        <main class="chat">
+
+
+            <!-- CHAT HEADER -->
+
+            <header class="chat-header">
+
+
+                <div class="current-user">
+
+
+                    <div class="avatar" id="current-avatar">
+                    </div>
+
+
+                    <div>
+
+                        <h2 id="current-name">
+                            Select a student
+                        </h2>
+
+
+                        <span class="status">
+
+                            <span class="status-dot"></span>
+
+                            Online
+
+                        </span>
+
+                    </div>
+
+
+                </div>
+
+
+
+                <div class="header-actions">
+
+
+                    <button
+                        type="button"
+                        title="Call"
+                    >
+                        ☎
+                    </button>
+
+
+                    <button
+                        type="button"
+                        title="Video call"
+                    >
+                        ▣
+                    </button>
+
+
+                    <button
+                        type="button"
+                        title="More"
+                    >
+                        ⋮
+                    </button>
+
+
+                </div>
+
+
+            </header>
+
+
+
+            <!-- =========================
+                 MESSAGES
+            ========================== -->
+
+            <section
+                class="messages"
+                id="messages"
+            >
+
+                <div class="empty-chat">
+
+                    Select a student to start chatting.
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =========================
+                 MESSAGE INPUT
+            ========================== -->
+
+            <form
+                class="message-form"
+                id="message-form"
+            >
+
+
+                <button
+                    type="button"
+                    class="attach"
+                    id="attach"
+                    title="Attach"
+                >
+
+                    +
+
+                </button>
+
+
+
+                <input
+                    type="text"
+                    id="message-input"
+                    placeholder="Type a message..."
+                    autocomplete="off"
+                >
+
+
+
+                <button
+                    type="button"
+                    class="emoji"
+                    id="emoji"
+                    title="Emoji"
+                >
+
+                    ☺
+
+                </button>
+
+
+
+                <button
+                    type="submit"
+                    class="send"
+                    title="Send"
+                >
+
+                    ➤
+
+                </button>
+
+
+            </form>
+
+
+        </main>
+
+
+    </div>
+
+
+    <script src="chat.js"></script>
+
+</body>
+
+</html>

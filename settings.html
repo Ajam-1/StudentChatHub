@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>ChatHub - Settings</title>
+
+    <meta name="description"
+        content="Manage your ChatHub profile, notifications, privacy, appearance, and account settings.">
+
+    <link rel="stylesheet" href="settings.css">
+
+</head>
+
+<body>
+
+    <header class="settings-header">
+
+        <div class="logo">
+            <span>C</span>hat<span>H</span>ub
+        </div>
+
+        <a href="studentchat.html" class="back-button">
+            ← Back to Chat
+        </a>
+
+    </header>
+
+
+    <main class="settings-container">
+
+        <div class="settings-title">
+
+            <h1>Settings</h1>
+
+            <p>
+                Customize your ChatHub experience.
+            </p>
+
+        </div>
+
+
+        <!-- PROFILE -->
+
+        <section class="settings-section">
+
+            <h2>Profile</h2>
+
+            <div class="setting-item profile-setting">
+
+                <div class="profile-preview">
+
+                    <img
+                        src="Pictures/picture.jpeg"
+                        alt="Profile picture"
+                        id="profile-preview"
+                    >
+
+                </div>
+
+                <div class="setting-info">
+
+                    <h3>Profile Picture</h3>
+
+                    <p>
+                        Change the picture other students see.
+                    </p>
+
+                </div>
+
+                <button id="change-profile">
+                    Change
+                </button>
+
+                <input
+                    type="file"
+                    id="profile-input"
+                    accept="image/*"
+                    hidden
+                >
+
+            </div>
+
+
+            <div class="setting-item">
+
+                <div class="setting-info">
+
+                    <h3>Username</h3>
+
+                    <p>
+                        Change your ChatHub username.
+                    </p>
+
+                </div>
+
+                <button>
+                    Edit
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- APPEARANCE -->
+
+        <section class="settings-section">
+
+            <h2>Appearance</h2>
+
+
+            <!-- WALLPAPER -->
+
+            <div class="setting-item">
+
+                <div class="setting-info">
+
+                    <h3>Chat Wallpaper</h3>
+
+                    <p>
+                        Choose an image to use as your chat background.
+                    </p>
+
+                </div>
+
+                <div class="wallpaper-buttons">
+
+                    <button id="change-wallpaper">
+                        Change
+                    </button>
+
+                    <button
+                        id="remove-wallpaper"
+                        class="secondary-button"
+                    >
+                        Remove
+                    </button>
+
+                </div>
+
+                <input
+                    type="file"
+                    id="wallpaper-input"
+                    accept="image/*"
+                    hidden
+                >
+
+            </div>
+
+
+            <!-- THEME -->
+
+            <div class="setting-item">
+
+                <div class="setting-info">
+
+                    <h3>Theme</h3>
+
+                    <p>
+                        Choose how ChatHub looks.
+                    </p>
+
+                </div>
+
+                <select id="theme-select">
+
+                    <option value="light">
+                        Light
+                    </option>
+
+                    <option value="dark">
+                        Dark
+                    </option>
+
+                </select>
+
+            </div>
+
+        </section>
+
+
+        <!-- NOTIFICATIONS -->
+
+        <section class="settings-section">
+
+            <h2>Notifications</h2>
+
+            <div class="setting-item">
+
+                <div class="setting-info">
+
+                    <h3>Message Notifications</h3>
+
+                    <p>
+                        Get notified when someone sends you a message.
+                    </p>
+
+                </div>
+
+                <label class="switch">
+
+                    <input
+                        type="checkbox"
+                        checked
+                    >
+
+                    <span class="slider"></span>
+
+                </label>
+
+            </div>
+
+
+            <div class="setting-item">
+
+                <div class="setting-info">
+
+                    <h3>Group Notifications</h3>
+
+                    <p>
+                        Receive notifications from your groups.
+                    </p>
+
+                </div>
+
+                <label class="switch">
+
+                    <input
+                        type="checkbox"
+                        checked
+                    >
+
+                    <span class="slider"></span>
+
+                </label>
+
+            </div>
+
+        </section>
+
+
+        <!-- PRIVACY -->
+
+        <section class="settings-section">
+
+            <h2>Privacy</h2>
+
+            <div class="setting-item">
+
+                <div class="setting-info">
+
+                    <h3>Online Status</h3>
+
+                    <p>
+                        Allow other students to see when you're online.
+                    </p>
+
+                </div>
+
+                <label class="switch">
+
+                    <input
+                        type="checkbox"
+                        checked
+                    >
+
+                    <span class="slider"></span>
+
+                </label>
+
+            </div>
+
+        </section>
+
+
+        <!-- ACCOUNT -->
+
+        <section class="settings-section">
+
+            <h2>Account</h2>
+
+            <div class="setting-item">
+
+                <div class="setting-info">
+
+                    <h3>Change Password</h3>
+
+                    <p>
+                        Update your account password.
+                    </p>
+
+                </div>
+
+                <button>
+                    Change
+                </button>
+
+            </div>
+
+
+            <div class="setting-item logout-item">
+
+                <div class="setting-info">
+
+                    <h3>Log Out</h3>
+
+                    <p>
+                        Log out of your ChatHub account.
+                    </p>
+
+                </div>
+
+                <button id="logout">
+                    Log Out
+                </button>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script src="settings.js"></script>
+
+</body>
+
+</html>
+

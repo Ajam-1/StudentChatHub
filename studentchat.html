@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ChatHub</title>
+    <meta name="description" content="ChatHub helps students find and chat with other students online.">
+
+    <link rel="stylesheet" href="chathub.css">
+</head>
+
+<body>
+
+    <header>
+
+        <h1>ChatHub</h1>
+
+        <div class="account">
+            <span id="username"></span>
+            <button id="logout">Logout</button>
+        </div>
+
+    </header>
+
+
+    <main>
+
+        <section class="welcome">
+
+            <h2>Find Students</h2>
+
+            <p>
+                Search for someone to start a conversation.
+            </p>
+
+        </section>
+
+
+        <input
+            type="search"
+            id="search"
+            placeholder="Search students..."
+            autocomplete="off"
+        >
+
+
+        <div id="users">
+
+            <p>Loading users...</p>
+
+        </div>
+
+    </main>
+
+
+    <script src="chathub.js"></script>
+
+</body>
+
+</html>

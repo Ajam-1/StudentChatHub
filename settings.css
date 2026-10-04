@@ -1,0 +1,403 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+
+    background: #f3f5f9;
+
+    color: #1e293b;
+
+    min-height: 100vh;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.settings-header {
+    height: 70px;
+
+    background: white;
+
+    border-bottom: 1px solid #e5e7eb;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 30px;
+}
+
+
+.logo {
+    font-size: 25px;
+
+    font-weight: bold;
+}
+
+.logo span:first-child {
+    color: #4f46e5;
+}
+
+.logo span:last-child {
+    color: #7c3aed;
+}
+
+
+.back-button {
+    text-decoration: none;
+
+    color: #475569;
+
+    font-size: 14px;
+
+    font-weight: bold;
+}
+
+.back-button:hover {
+    color: #4f46e5;
+}
+
+
+/* =========================
+   SETTINGS CONTAINER
+========================= */
+
+.settings-container {
+    width: 90%;
+
+    max-width: 850px;
+
+    margin: 40px auto;
+}
+
+
+.settings-title {
+    margin-bottom: 30px;
+}
+
+.settings-title h1 {
+    font-size: 30px;
+
+    margin-bottom: 8px;
+}
+
+.settings-title p {
+    color: #64748b;
+
+    font-size: 14px;
+}
+
+
+/* =========================
+   SETTINGS SECTION
+========================= */
+
+.settings-section {
+    background: white;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 14px;
+
+    margin-bottom: 20px;
+
+    overflow: hidden;
+}
+
+.settings-section > h2 {
+    font-size: 17px;
+
+    padding: 20px;
+
+    border-bottom: 1px solid #f1f5f9;
+}
+
+
+/* =========================
+   SETTING ITEM
+========================= */
+
+.setting-item {
+    min-height: 75px;
+
+    padding: 17px 20px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+
+.setting-info {
+    flex: 1;
+}
+
+.setting-info h3 {
+    font-size: 14px;
+
+    margin-bottom: 5px;
+}
+
+.setting-info p {
+    color: #64748b;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================
+   BUTTONS
+========================= */
+
+.setting-item button {
+    border: none;
+
+    background: #4f46e5;
+
+    color: white;
+
+    padding: 9px 16px;
+
+    border-radius: 7px;
+
+    cursor: pointer;
+
+    font-size: 13px;
+}
+
+.setting-item button:hover {
+    background: #4338ca;
+}
+
+
+.secondary-button {
+    background: #f1f5f9 !important;
+
+    color: #475569 !important;
+}
+
+.secondary-button:hover {
+    background: #e2e8f0 !important;
+}
+
+
+/* =========================
+   PROFILE
+========================= */
+
+.profile-preview img {
+    width: 52px;
+
+    height: 52px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+}
+
+
+/* =========================
+   WALLPAPER
+========================= */
+
+.wallpaper-buttons {
+    display: flex;
+
+    gap: 8px;
+}
+
+
+/* =========================
+   SELECT
+========================= */
+
+#theme-select {
+    padding: 8px 12px;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 7px;
+
+    background: white;
+
+    cursor: pointer;
+
+    outline: none;
+}
+
+
+/* =========================
+   TOGGLE SWITCH
+========================= */
+
+.switch {
+    position: relative;
+
+    width: 44px;
+
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+
+    width: 0;
+
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+
+    inset: 0;
+
+    background: #cbd5e1;
+
+    border-radius: 20px;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.slider::before {
+    content: "";
+
+    position: absolute;
+
+    width: 18px;
+
+    height: 18px;
+
+    left: 3px;
+
+    top: 3px;
+
+    background: white;
+
+    border-radius: 50%;
+
+    transition: 0.2s;
+}
+
+.switch input:checked + .slider {
+    background: #4f46e5;
+}
+
+.switch input:checked + .slider::before {
+    transform: translateX(20px);
+}
+
+
+/* =========================
+   LOGOUT
+========================= */
+
+.logout-item button {
+    background: #ef4444;
+}
+
+.logout-item button:hover {
+    background: #dc2626;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+
+    .settings-header {
+        padding: 0 15px;
+    }
+
+    .settings-container {
+        width: 94%;
+
+        margin: 25px auto;
+    }
+
+    .setting-item {
+        align-items: flex-start;
+
+        flex-wrap: wrap;
+    }
+
+    .setting-info {
+        min-width: 70%;
+    }
+
+    .wallpaper-buttons {
+        width: 100%;
+    }
+
+    .wallpaper-buttons button {
+        flex: 1;
+    }
+
+}
+
+/* =========================
+   DARK MODE
+========================= */
+
+body.dark {
+    background: #0f172a;
+    color: #f8fafc;
+}
+
+body.dark .settings-header {
+    background: #111827;
+    border-color: #1f2937;
+}
+
+body.dark .back-button {
+    color: #cbd5e1;
+}
+
+body.dark .settings-title p {
+    color: #94a3b8;
+}
+
+body.dark .settings-section {
+    background: #111827;
+    border-color: #1f2937;
+}
+
+body.dark .settings-section > h2 {
+    border-color: #1f2937;
+}
+
+body.dark .setting-item {
+    border-color: #1f2937;
+}
+
+body.dark .setting-info p {
+    color: #94a3b8;
+}
+
+body.dark #theme-select {
+    background: #1f2937;
+    color: white;
+    border-color: #374151;
+}
