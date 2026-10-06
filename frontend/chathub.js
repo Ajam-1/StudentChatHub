@@ -1,221 +1,224 @@
-const API_URL = "https://peerva-backend.onrender.com/";
+const API_URL = "https://peerva-backend.onrender.com";
 
+// =========================
+// CURRENT USER
+// =========================
 
 const currentUser =
-    JSON.parse(
-        localStorage.getItem("chathubUser")
-    );
+JSON.parse(
+localStorage.getItem("chathubUser")
+);
 
+// =========================
+// ELEMENTS
+// =========================
 
 const usernameElement =
-    document.getElementById("username");
-
+document.getElementById("username");
 
 const usersContainer =
-    document.getElementById("users");
-
+document.getElementById("users");
 
 const search =
-    document.getElementById("search");
-
+document.getElementById("search");
 
 const logout =
-    document.getElementById("logout");
+document.getElementById("logout");
 
-
-
-/* =========================
-   CHECK LOGIN
-========================= */
+// =========================
+// CHECK LOGIN
+// =========================
 
 if (!currentUser) {
 
-    window.location.href = "signin.html";
+
+window.location.href = "signin.html";
+
 
 }
 
+// =========================
+// SHOW USERNAME
+// =========================
+
+if (currentUser && usernameElement) {
 
 
-/* =========================
-   SHOW USERNAME
-========================= */
+usernameElement.textContent =
+    currentUser.username;
 
-if (currentUser) {
-
-    usernameElement.textContent =
-        currentUser.username;
 
 }
 
-
-
-/* =========================
-   LOAD USERS
-========================= */
+// =========================
+// LOAD USERS
+// =========================
 
 async function loadUsers() {
 
-    try {
+```
+try {
 
-        const response =
-            await fetch(
-                `${API_URL}/users`
-            );
+    const response =
+        await fetch(
+            `${API_URL}/users`
+        );
 
 
-        if (!response.ok) {
+    if (!response.ok) {
 
-            throw new Error(
-                "Could not load users."
-            );
+        throw new Error(
+            `Server returned ${response.status}`
+        );
+
+    }
+
+
+    const users =
+        await response.json();
+
+
+    displayUsers(users);
+
+
+} catch (error) {
+
+    console.error(
+        "Peerva backend error:",
+        error
+    );
+
+
+    if (usersContainer) {
+
+        usersContainer.innerHTML = `
+            <p>
+                Could not connect to Peerva.
+            </p>
+        `;
+
+    }
+
+}
+
+
+}
+
+// =========================
+// DISPLAY USERS
+// =========================
+
+function displayUsers(users) {
+
+
+if (!usersContainer) {
+    return;
+}
+
+
+const searchText =
+    search
+        ? search.value
+            .toLowerCase()
+            .trim()
+        : "";
+
+
+const filteredUsers =
+    users.filter(user => {
+
+        // Don't show yourself
+        if (
+            Number(user.id) ===
+            Number(currentUser.id)
+        ) {
+
+            return false;
 
         }
 
 
-        const users =
-            await response.json();
-
-
-        displayUsers(users);
-
-
-    } catch (error) {
-
-        console.error(error);
-
-
-        usersContainer.innerHTML = `
-            <p>
-                Could not connect to ChatHub.
-            </p>
-        `;
-
-    }
-
-}
-
-
-
-/* =========================
-   DISPLAY USERS
-========================= */
-
-function displayUsers(users) {
-
-    const searchText =
-        search.value
+        return user.username
             .toLowerCase()
-            .trim();
-
-
-    const filteredUsers =
-        users.filter(user => {
-
-            /*
-                Don't show yourself.
-            */
-
-            if (
-                Number(user.id) ===
-                Number(currentUser.id)
-            ) {
-
-                return false;
-
-            }
-
-
-            return user.username
-                .toLowerCase()
-                .includes(searchText);
-
-        });
-
-
-
-    if (filteredUsers.length === 0) {
-
-        usersContainer.innerHTML = `
-            <p>
-                No students found.
-            </p>
-        `;
-
-        return;
-
-    }
-
-
-
-    usersContainer.innerHTML = "";
-
-
-
-    filteredUsers.forEach(user => {
-
-        const userElement =
-            document.createElement("div");
-
-
-        userElement.className =
-            "user";
-
-
-        const name =
-            document.createElement("span");
-
-
-        name.className =
-            "user-name";
-
-
-        name.textContent =
-            user.username;
-
-
-
-        const button =
-            document.createElement("button");
-
-
-        button.className =
-            "chat-button";
-
-
-        button.textContent =
-            "Chat";
-
-
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                startChat(user);
-
-            }
-        );
-
-
-
-        userElement.appendChild(name);
-
-        userElement.appendChild(button);
-
-
-        usersContainer.appendChild(
-            userElement
-        );
+            .includes(searchText);
 
     });
 
+
+if (filteredUsers.length === 0) {
+
+    usersContainer.innerHTML = `
+        <p>
+            No students found.
+        </p>
+    `;
+
+    return;
+
 }
 
 
+usersContainer.innerHTML = "";
 
-/* =========================
-   SEARCH
-========================= */
+
+filteredUsers.forEach(user => {
+
+    const userElement =
+        document.createElement("div");
+
+    userElement.className =
+        "user";
+
+
+    const name =
+        document.createElement("span");
+
+    name.className =
+        "user-name";
+
+    name.textContent =
+        user.username;
+
+
+    const button =
+        document.createElement("button");
+
+    button.className =
+        "chat-button";
+
+    button.textContent =
+        "Chat";
+
+
+    button.addEventListener(
+        "click",
+        () => {
+
+            startChat(user);
+
+        }
+    );
+
+
+    userElement.appendChild(name);
+
+    userElement.appendChild(button);
+
+    usersContainer.appendChild(
+        userElement
+    );
+
+});
+
+
+}
+
+// =========================
+// SEARCH
+// =========================
+
+if (search) {
+
 
 search.addEventListener(
     "input",
@@ -223,40 +226,36 @@ search.addEventListener(
 );
 
 
+}
 
-/* =========================
-   START CHAT
-========================= */
+// =========================
+// START CHAT
+// =========================
 
 function startChat(user) {
 
-    /*
-        Save the EXACT person clicked.
-    */
 
-    localStorage.setItem(
-        "chatWith",
-        JSON.stringify({
-            id: user.id,
-            username: user.username
-        })
-    );
+localStorage.setItem(
+    "chatWith",
+    JSON.stringify({
+        id: user.id,
+        username: user.username
+    })
+);
 
 
-    /*
-        Open chat page.
-    */
+window.location.href =
+    "chat.html";
 
-    window.location.href =
-        "chat.html";
 
 }
 
+// =========================
+// LOGOUT
+// =========================
 
+if (logout) {
 
-/* =========================
-   LOGOUT
-========================= */
 
 logout.addEventListener(
     "click",
@@ -277,11 +276,9 @@ logout.addEventListener(
             "user"
         );
 
-
         localStorage.removeItem(
             "chathubUser"
         );
-
 
         localStorage.removeItem(
             "chatWith"
@@ -295,13 +292,16 @@ logout.addEventListener(
 );
 
 
+}
 
-/* =========================
-   START
-========================= */
+// =========================
+// START
+// =========================
 
 if (currentUser) {
 
-    loadUsers();
+
+loadUsers();
+
 
 }
