@@ -35,16 +35,6 @@ form.addEventListener(
                 .value;
 
 
-        if (!email || !password) {
-
-            message.textContent =
-                "Please enter your email and password.";
-
-            return;
-
-        }
-
-
         message.textContent =
             "Signing in...";
 
@@ -62,11 +52,12 @@ form.addEventListener(
                                 "application/json"
                         },
 
-                        body:
-                            JSON.stringify({
-                                email,
-                                password
-                            })
+                        body: JSON.stringify({
+
+                            email,
+                            password
+
+                        })
                     }
                 );
 
@@ -86,20 +77,6 @@ form.addEventListener(
             }
 
 
-            /*
-                Save JWT token.
-            */
-
-            localStorage.setItem(
-                "peervaToken",
-                data.token
-            );
-
-
-            /*
-                Save user information.
-            */
-
             localStorage.setItem(
                 "user",
                 JSON.stringify(
@@ -115,10 +92,6 @@ form.addEventListener(
                 )
             );
 
-
-            /*
-                Remove previous chat.
-            */
 
             localStorage.removeItem(
                 "chatWith"
@@ -143,7 +116,7 @@ form.addEventListener(
         } catch (error) {
 
             console.error(
-                "Peerva login error:",
+                "Peerva connection error:",
                 error
             );
 
