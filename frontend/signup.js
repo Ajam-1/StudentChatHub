@@ -1,4 +1,5 @@
-const API_URL = "http://localhost:5000";
+const API_URL =
+    "https://peerva-backend.onrender.com";
 
 
 const form =
@@ -11,7 +12,6 @@ const message =
     document.getElementById(
         "message"
     );
-
 
 
 form.addEventListener(
@@ -42,6 +42,20 @@ form.addEventListener(
                 .value;
 
 
+        if (
+            !username ||
+            !email ||
+            !password
+        ) {
+
+            message.textContent =
+                "Please fill in all fields.";
+
+            return;
+
+        }
+
+
         message.textContent =
             "Creating account...";
 
@@ -59,13 +73,12 @@ form.addEventListener(
                                 "application/json"
                         },
 
-                        body: JSON.stringify({
-
-                            username,
-                            email,
-                            password
-
-                        })
+                        body:
+                            JSON.stringify({
+                                username,
+                                email,
+                                password
+                            })
                     }
                 );
 
@@ -86,49 +99,53 @@ form.addEventListener(
 
 
             /*
-                Save the complete user.
+                Do NOT save a login token here.
+
+                The user must sign in.
             */
 
-            localStorage.setItem(
-                "user",
-                JSON.stringify(
-                    data.user
-                )
+            localStorage.removeItem(
+                "peervaToken"
             );
 
+            localStorage.removeItem(
+                "user"
+            );
 
-            localStorage.setItem(
-                "chathubUser",
-                JSON.stringify(
-                    data.user
-                )
+            localStorage.removeItem(
+                "chathubUser"
+            );
+
+            localStorage.removeItem(
+                "chatWith"
             );
 
 
             message.textContent =
-                "Account created!";
+                "Account created! Redirecting to sign in...";
 
 
             setTimeout(
                 () => {
 
                     window.location.href =
-                        "studentchat.html";
+                        "signin.html";
 
                 },
-                500
+                1000
             );
 
 
         } catch (error) {
 
             console.error(
+                "Peerva signup error:",
                 error
             );
 
 
             message.textContent =
-                "Could not connect to ChatHub.";
+                "Could not connect to Peerva.";
 
         }
 
