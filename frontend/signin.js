@@ -1,4 +1,5 @@
-const API_URL = "http://localhost:5000";
+const API_URL =
+    "https://peerva-backend.onrender.com";
 
 
 const form =
@@ -11,7 +12,6 @@ const message =
     document.getElementById(
         "message"
     );
-
 
 
 form.addEventListener(
@@ -35,6 +35,16 @@ form.addEventListener(
                 .value;
 
 
+        if (!email || !password) {
+
+            message.textContent =
+                "Please enter your email and password.";
+
+            return;
+
+        }
+
+
         message.textContent =
             "Signing in...";
 
@@ -52,12 +62,11 @@ form.addEventListener(
                                 "application/json"
                         },
 
-                        body: JSON.stringify({
-
-                            email,
-                            password
-
-                        })
+                        body:
+                            JSON.stringify({
+                                email,
+                                password
+                            })
                     }
                 );
 
@@ -78,7 +87,17 @@ form.addEventListener(
 
 
             /*
-                Save the complete user.
+                Save JWT token.
+            */
+
+            localStorage.setItem(
+                "peervaToken",
+                data.token
+            );
+
+
+            /*
+                Save user information.
             */
 
             localStorage.setItem(
@@ -98,8 +117,7 @@ form.addEventListener(
 
 
             /*
-                Remove old conversation
-                selection.
+                Remove previous chat.
             */
 
             localStorage.removeItem(
@@ -125,12 +143,13 @@ form.addEventListener(
         } catch (error) {
 
             console.error(
+                "Peerva login error:",
                 error
             );
 
 
             message.textContent =
-                "Could not connect to ChatHub.";
+                "Could not connect to Peerva.";
 
         }
 
