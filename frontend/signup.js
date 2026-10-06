@@ -42,20 +42,6 @@ form.addEventListener(
                 .value;
 
 
-        if (
-            !username ||
-            !email ||
-            !password
-        ) {
-
-            message.textContent =
-                "Please fill in all fields.";
-
-            return;
-
-        }
-
-
         message.textContent =
             "Creating account...";
 
@@ -73,12 +59,13 @@ form.addEventListener(
                                 "application/json"
                         },
 
-                        body:
-                            JSON.stringify({
-                                username,
-                                email,
-                                password
-                            })
+                        body: JSON.stringify({
+
+                            username,
+                            email,
+                            password
+
+                        })
                     }
                 );
 
@@ -98,48 +85,41 @@ form.addEventListener(
             }
 
 
-            /*
-                Do NOT save a login token here.
-
-                The user must sign in.
-            */
-
-            localStorage.removeItem(
-                "peervaToken"
+            localStorage.setItem(
+                "user",
+                JSON.stringify(
+                    data.user
+                )
             );
 
-            localStorage.removeItem(
-                "user"
-            );
 
-            localStorage.removeItem(
-                "chathubUser"
-            );
-
-            localStorage.removeItem(
-                "chatWith"
+            localStorage.setItem(
+                "chathubUser",
+                JSON.stringify(
+                    data.user
+                )
             );
 
 
             message.textContent =
-                "Account created! Redirecting to sign in...";
+                "Account created!";
 
 
             setTimeout(
                 () => {
 
                     window.location.href =
-                        "signin.html";
+                        "studentchat.html";
 
                 },
-                1000
+                500
             );
 
 
         } catch (error) {
 
             console.error(
-                "Peerva signup error:",
+                "Peerva connection error:",
                 error
             );
 
