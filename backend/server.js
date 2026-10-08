@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 
@@ -12,15 +14,30 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 
-const USERS_FILE = path.join(__dirname, "users.json");
-const MESSAGES_FILE = path.join(__dirname, "messages.json");
+const JWT_SECRET =
+    process.env.JWT_SECRET || "peerva-development-secret";
+
+const USERS_FILE =
+    path.join(__dirname, "users.json");
+
+const MESSAGES_FILE =
+    path.join(__dirname, "messages.json");
 
 
 /* =========================
    MIDDLEWARE
 ========================= */
 
-app.use(cors());
+app.use(
+    cors({
+        origin: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: [
+            "Content-Type",
+            "Authorization"
+        ]
+    })
+);
 
 app.use(express.json());
 
@@ -35,7 +52,11 @@ function ensureFile(file, defaultData) {
 
         fs.writeFileSync(
             file,
-            JSON.stringify(defaultData, null, 2)
+            JSON.stringify(
+                defaultData,
+                null,
+                2
+            )
         );
 
     }
@@ -45,7 +66,10 @@ function ensureFile(file, defaultData) {
 
 function getUsers() {
 
-    ensureFile(USERS_FILE, []);
+    ensureFile(
+        USERS_FILE,
+        []
+    );
 
     try {
 
@@ -86,7 +110,10 @@ function saveUsers(users) {
 
 function getMessages() {
 
-    ensureFile(MESSAGES_FILE, []);
+    ensureFile(
+        MESSAGES_FILE,
+        []
+    );
 
     try {
 
@@ -126,6 +153,84 @@ function saveMessages(messages) {
 
 
 /* =========================
+   SAFE USER
+========================= */
+
+function safeUser(user) {
+
+    return {
+        id: user.id,
+        username: user.username,
+        email: user.email
+    };
+
+}
+
+
+/* =========================
+   AUTHENTICATION
+========================= */
+
+function authenticateToken(req, res, next) {
+
+    const authHeader =
+        req.headers.authorization;
+
+    if (!authHeader) {
+
+        return res.status(401).json({
+            message:
+                "You must sign in first."
+        });
+
+    }
+
+
+    const parts =
+        authHeader.split(" ");
+
+
+    if (
+        parts.length !== 2 ||
+        parts[0] !== "Bearer"
+    ) {
+
+        return res.status(401).json({
+            message:
+                "Invalid authentication format."
+        });
+
+    }
+
+
+    const token = parts[1];
+
+
+    try {
+
+        const decoded =
+            jwt.verify(
+                token,
+                JWT_SECRET
+            );
+
+        req.user = decoded;
+
+        next();
+
+    } catch (error) {
+
+        return res.status(401).json({
+            message:
+                "Your login session has expired. Please sign in again."
+        });
+
+    }
+
+}
+
+
+/* =========================
    HOME
 ========================= */
 
@@ -148,238 +253,411 @@ app.get("/", (req, res) => {
    SIGN UP
 ========================= */
 
-app.post("/signup", (req, res) => {
+app.post(
+    "/signup",
+    async (req, res) => {
 
-    const {
-        username,
-        email,
-        password
-    } = req.body;
+        try {
+
+            const {
+                username,
+                email,
+                password
+            } = req.body;
 
 
-    if (
-        !username ||
-        !email ||
-        !password
-    ) {
+            if (
+                !username ||
+                !email ||
+                !password
+            ) {
 
-        return res.status(400).json({
+                return res.status(400).json({
 
-            message:
-                "All fields are required."
+                    message:
+                        "All fields are required."
 
-        });
+                });
+
+            }
+
+
+            const cleanUsername =
+                String(username).trim();
+
+
+            const cleanEmail =
+                String(email)
+                    .trim()
+                    .toLowerCase();
+
+
+            if (
+                cleanUsername.length < 3
+            ) {
+
+                return res.status(400).json({
+
+                    message:
+                        "Username must be at least 3 characters."
+
+                });
+
+            }
+
+
+            if (
+                password.length < 6
+            ) {
+
+                return res.status(400).json({
+
+                    message:
+                        "Password must be at least 6 characters."
+
+                });
+
+            }
+
+
+            const users =
+                getUsers();
+
+
+            const emailExists =
+                users.some(
+                    user =>
+                        String(user.email)
+                            .toLowerCase() ===
+                        cleanEmail
+                );
+
+
+            if (emailExists) {
+
+                return res.status(400).json({
+
+                    message:
+                        "Email already exists."
+
+                });
+
+            }
+
+
+            const usernameExists =
+                users.some(
+                    user =>
+                        String(user.username)
+                            .toLowerCase() ===
+                        cleanUsername.toLowerCase()
+                );
+
+
+            if (usernameExists) {
+
+                return res.status(400).json({
+
+                    message:
+                        "Username already exists."
+
+                });
+
+            }
+
+
+            /* =========================
+               HASH PASSWORD
+            ========================= */
+
+            const hashedPassword =
+                await bcrypt.hash(
+                    password,
+                    10
+                );
+
+
+            const user = {
+
+                id:
+                    Date.now(),
+
+                username:
+                    cleanUsername,
+
+                email:
+                    cleanEmail,
+
+                password:
+                    hashedPassword
+
+            };
+
+
+            users.push(user);
+
+            saveUsers(users);
+
+
+            res.status(201).json({
+
+                message:
+                    "Peerva account created! Please sign in.",
+
+                user:
+                    safeUser(user)
+
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Signup error:",
+                error
+            );
+
+            res.status(500).json({
+
+                message:
+                    "Something went wrong while creating your account."
+
+            });
+
+        }
 
     }
-
-
-    const cleanUsername =
-        String(username).trim();
-
-
-    const cleanEmail =
-        String(email)
-            .trim()
-            .toLowerCase();
-
-
-    if (cleanUsername.length < 3) {
-
-        return res.status(400).json({
-
-            message:
-                "Username must be at least 3 characters."
-
-        });
-
-    }
-
-
-    if (password.length < 6) {
-
-        return res.status(400).json({
-
-            message:
-                "Password must be at least 6 characters."
-
-        });
-
-    }
-
-
-    const users = getUsers();
-
-
-    const emailExists =
-        users.find(
-            user =>
-                user.email.toLowerCase() ===
-                cleanEmail
-        );
-
-
-    if (emailExists) {
-
-        return res.status(400).json({
-
-            message:
-                "Email already exists."
-
-        });
-
-    }
-
-
-    const usernameExists =
-        users.find(
-            user =>
-                user.username.toLowerCase() ===
-                cleanUsername.toLowerCase()
-        );
-
-
-    if (usernameExists) {
-
-        return res.status(400).json({
-
-            message:
-                "Username already exists."
-
-        });
-
-    }
-
-
-    const user = {
-
-        id:
-            Date.now(),
-
-        username:
-            cleanUsername,
-
-        email:
-            cleanEmail,
-
-        password:
-            password
-
-    };
-
-
-    users.push(user);
-
-    saveUsers(users);
-
-
-    res.status(201).json({
-
-        message:
-            "Peerva account created!",
-
-        user
-
-    });
-
-});
+);
 
 
 /* =========================
    LOGIN
 ========================= */
 
-app.post("/login", (req, res) => {
+app.post(
+    "/login",
+    async (req, res) => {
 
-    const {
-        email,
-        password
-    } = req.body;
+        try {
+
+            const {
+                email,
+                password
+            } = req.body;
 
 
-    if (
-        !email ||
-        !password
-    ) {
+            if (
+                !email ||
+                !password
+            ) {
 
-        return res.status(400).json({
+                return res.status(400).json({
 
-            message:
-                "Email and password are required."
+                    message:
+                        "Email and password are required."
+
+                });
+
+            }
+
+
+            const cleanEmail =
+                String(email)
+                    .trim()
+                    .toLowerCase();
+
+
+            const users =
+                getUsers();
+
+
+            const user =
+                users.find(
+                    user =>
+                        String(user.email)
+                            .toLowerCase() ===
+                        cleanEmail
+                );
+
+
+            if (!user) {
+
+                return res.status(401).json({
+
+                    message:
+                        "Incorrect email or password."
+
+                });
+
+            }
+
+
+            /* =========================
+               CHECK PASSWORD
+            ========================= */
+
+            const passwordCorrect =
+                await bcrypt.compare(
+                    password,
+                    user.password
+                );
+
+
+            if (!passwordCorrect) {
+
+                return res.status(401).json({
+
+                    message:
+                        "Incorrect email or password."
+
+                });
+
+            }
+
+
+            /* =========================
+               CREATE JWT
+            ========================= */
+
+            const token =
+                jwt.sign(
+
+                    {
+                        id:
+                            user.id,
+
+                        username:
+                            user.username,
+
+                        email:
+                            user.email
+
+                    },
+
+                    JWT_SECRET,
+
+                    {
+                        expiresIn:
+                            "7d"
+                    }
+
+                );
+
+
+            res.json({
+
+                message:
+                    "Login successful!",
+
+                token,
+
+                user:
+                    safeUser(user)
+
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Login error:",
+                error
+            );
+
+            res.status(500).json({
+
+                message:
+                    "Something went wrong while signing in."
+
+            });
+
+        }
+
+    }
+);
+
+
+/* =========================
+   GET CURRENT USER
+========================= */
+
+app.get(
+    "/me",
+    authenticateToken,
+    (req, res) => {
+
+        const users =
+            getUsers();
+
+
+        const user =
+            users.find(
+                user =>
+                    Number(user.id) ===
+                    Number(req.user.id)
+            );
+
+
+        if (!user) {
+
+            return res.status(404).json({
+
+                message:
+                    "User no longer exists."
+
+            });
+
+        }
+
+
+        res.json({
+
+            user:
+                safeUser(user)
 
         });
 
     }
-
-
-    const users = getUsers();
-
-
-    const user =
-        users.find(
-            user =>
-                user.email.toLowerCase() ===
-                    String(email)
-                        .trim()
-                        .toLowerCase() &&
-
-                user.password ===
-                    password
-        );
-
-
-    if (!user) {
-
-        return res.status(401).json({
-
-            message:
-                "Incorrect email or password."
-
-        });
-
-    }
-
-
-    res.json({
-
-        message:
-            "Login successful!",
-
-        user
-
-    });
-
-});
+);
 
 
 /* =========================
    GET USERS
 ========================= */
 
-app.get("/users", (req, res) => {
+app.get(
+    "/users",
+    authenticateToken,
+    (req, res) => {
 
-    const users =
-        getUsers();
+        const users =
+            getUsers();
 
 
-    const safeUsers =
-        users.map(
-            user => ({
+        const safeUsers =
+            users
+                .filter(
+                    user =>
+                        Number(user.id) !==
+                        Number(req.user.id)
+                )
+                .map(
+                    user => ({
 
-                id:
-                    user.id,
+                        id:
+                            user.id,
 
-                username:
-                    user.username
+                        username:
+                            user.username
 
-            })
+                    })
+                );
+
+
+        res.json(
+            safeUsers
         );
 
-
-    res.json(
-        safeUsers
-    );
-
-});
+    }
+);
 
 
 /* =========================
@@ -388,6 +666,7 @@ app.get("/users", (req, res) => {
 
 app.get(
     "/messages/:userId/:otherUserId",
+    authenticateToken,
     (req, res) => {
 
         const userId =
@@ -411,6 +690,25 @@ app.get(
 
                 message:
                     "Invalid user ID."
+
+            });
+
+        }
+
+
+        /* =========================
+           SECURITY CHECK
+        ========================= */
+
+        if (
+            userId !==
+            Number(req.user.id)
+        ) {
+
+            return res.status(403).json({
+
+                message:
+                    "You cannot access another user's conversation."
 
             });
 
@@ -479,17 +777,16 @@ app.get(
 
 app.post(
     "/messages",
+    authenticateToken,
     (req, res) => {
 
         const {
-            senderId,
             receiverId,
             text
         } = req.body;
 
 
         if (
-            !senderId ||
             !receiverId ||
             !text
         ) {
@@ -497,7 +794,7 @@ app.post(
             return res.status(400).json({
 
                 message:
-                    "Sender, receiver and message are required."
+                    "Receiver and message are required."
 
             });
 
@@ -520,7 +817,9 @@ app.post(
         }
 
 
-        if (cleanText.length > 5000) {
+        if (
+            cleanText.length > 5000
+        ) {
 
             return res.status(400).json({
 
@@ -532,35 +831,61 @@ app.post(
         }
 
 
+        const senderId =
+            Number(req.user.id);
+
+
+        const cleanReceiverId =
+            Number(receiverId);
+
+
+        if (
+            !cleanReceiverId
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    "Invalid receiver."
+
+            });
+
+        }
+
+
+        if (
+            senderId ===
+            cleanReceiverId
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    "You cannot message yourself."
+
+            });
+
+        }
+
+
         const users =
             getUsers();
-
-
-        const senderExists =
-            users.some(
-                user =>
-                    Number(user.id) ===
-                    Number(senderId)
-            );
 
 
         const receiverExists =
             users.some(
                 user =>
                     Number(user.id) ===
-                    Number(receiverId)
+                    cleanReceiverId
             );
 
 
-        if (
-            !senderExists ||
-            !receiverExists
-        ) {
+        if (!receiverExists) {
 
             return res.status(404).json({
 
                 message:
-                    "User not found."
+                    "Receiver not found."
 
             });
 
@@ -577,10 +902,10 @@ app.post(
                 Date.now(),
 
             senderId:
-                Number(senderId),
+                senderId,
 
             receiverId:
-                Number(receiverId),
+                cleanReceiverId,
 
             text:
                 cleanText,
