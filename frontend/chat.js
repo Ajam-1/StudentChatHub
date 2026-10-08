@@ -1,1263 +1,671 @@
-const API_URL = "https://peerva-backend.onrender.com";
 
+const API_URL = "https://peerva-backend.onrender.com";
 
 /* =========================
    ELEMENTS
 ========================= */
 
-const chatList =
-    document.getElementById("chat-list");
-
-
-const messagesContainer =
-    document.getElementById("messages");
-
-
-const messageForm =
-    document.getElementById("message-form");
-
-
-const messageInput =
-    document.getElementById("message-input");
-
-
-const currentName =
-    document.getElementById("current-name");
-
-
-const currentAvatar =
-    document.getElementById("current-avatar");
-
-
-const usernameElement =
-    document.getElementById("username");
-
-
-const profileAvatar =
-    document.querySelector(".profile-avatar");
-
-
-const searchInput =
-    document.getElementById("user-search");
-
-
-const newChatButton =
-    document.getElementById("new-chat");
-
-
-const logoutButton =
-    document.getElementById("logout");
-
-
-const emojiButton =
-    document.getElementById("emoji");
-
-
-const attachButton =
-    document.getElementById("attach");
-
-
+const chatList = document.getElementById("chat-list");
+const messagesContainer = document.getElementById("messages");
+const messageForm = document.getElementById("message-form");
+const messageInput = document.getElementById("message-input");
+const currentName = document.getElementById("current-name");
 
 /* =========================
-   STATE
+   USER / STATE
 ========================= */
 
 let currentUser = null;
-
 let selectedUser = null;
 
-let users = [];
-
-
-
 /* =========================
-   GET CURRENT USER
+   GET SAVED USER
 ========================= */
 
-function getLoggedInUser() {
-
-    /*
-        Use chathubUser first because
-        signup and signin both save it.
-    */
-
-    let savedUser =
-        localStorage.getItem(
-            "chathubUser"
-        );
-
-
-    /*
-        Also support the "user" key.
-    */
-
-    if (!savedUser) {
-
-        savedUser =
-            localStorage.getItem(
-                "user"
-            );
-
-    }
-
-
-    if (!savedUser) {
-
-        window.location.href =
-            "signin.html";
-
-        return null;
-
-    }
-
-
+function getSavedUser() {
     try {
+        const saved =
+            localStorage.getItem("user") ||
+            localStorage.getItem("chathubUser");
 
-        return JSON.parse(
-            savedUser
-        );
+        if (!saved) {
+            return null;
+        }
 
+        return JSON.parse(saved);
     } catch (error) {
-
-        console.error(
-            "Invalid user data:",
-            error
-        );
-
-
-        localStorage.removeItem(
-            "user"
-        );
-
-
-        localStorage.removeItem(
-            "chathubUser"
-        );
-
-
-        window.location.href =
-            "signin.html";
-
-
+        console.error("Could not read saved user:", error);
         return null;
-
     }
-
 }
 
-
-
 /* =========================
-   LOAD CURRENT USER
+   AUTH TOKEN
 ========================= */
 
-function loadCurrentUser() {
+function getToken() {
+    return localStorage.getItem("token");
+}
 
-    currentUser =
-        getLoggedInUser();
+/* =========================
+   AUTH HEADERS
+========================= */
 
+function authHeaders(includeJSON = false) {
+    const headers = {};
+
+    const token = getToken();
+
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (includeJSON) {
+        headers["Content-Type"] = "application/json";
+    }
+
+    return headers;
+}
+
+/* =========================
+   CHECK LOGIN
+========================= */
+
+function checkLogin() {
+    currentUser = getSavedUser();
 
     if (!currentUser) {
-
+        window.location.href = "signin.html";
         return false;
-
     }
 
-
-    usernameElement.textContent =
-        currentUser.username;
-
-
-    const firstLetter =
-        currentUser.username
-            .charAt(0)
-            .toUpperCase();
-
-
-    profileAvatar.textContent =
-        firstLetter;
-
-
     return true;
-
 }
 
+/* =========================
+   GET USER ID
+========================= */
 
+function getCurrentUserId() {
+    if (!currentUser) {
+        return null;
+    }
+
+    return Number(
+        currentUser.id ??
+        currentUser._id ??
+        currentUser.userId
+    );
+}
 
 /* =========================
    LOAD USERS
 ========================= */
 
 async function loadUsers() {
-
     try {
-
-        const response =
-            await fetch(
-                `${API_URL}/users`
-            );
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Could not load users."
-            );
-
-        }
-
-
-        users =
-            await response.json();
-
-
-        /*
-            Don't show the logged-in
-            user in their own chat list.
-        */
-
-        const otherUsers =
-            users.filter(
-                user =>
-                    Number(user.id) !==
-                    Number(currentUser.id)
-            );
-
-
-        renderUsers(
-            otherUsers
-        );
-
-
-        /*
-            IMPORTANT:
-            Check which user was clicked
-            on the previous page.
-        */
-
-        openSavedChat(
-            otherUsers
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "User loading error:",
-            error
-        );
-
-
         chatList.innerHTML = `
-            <div class="chat-error">
-                Could not load users.
+            <div class="loading">
+                Loading users...
             </div>
         `;
 
+        const response = await fetch(`${API_URL}/users`, {
+            method: "GET",
+            headers: authHeaders()
+        });
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                handleAuthError();
+                return;
+            }
+
+            throw new Error(`Users request failed: ${response.status}`);
+        }
+
+        const users = await response.json();
+
+        if (!Array.isArray(users)) {
+            throw new Error("Invalid users response");
+        }
+
+        const myId = getCurrentUserId();
+
+        /*
+         * IMPORTANT:
+         * Only remove the currently logged-in account.
+         *
+         * Do NOT hard-code user IDs.
+         * Do NOT assume the first/second user is the recipient.
+         */
+        const otherUsers = users.filter(user => {
+            const userId = Number(
+                user.id ??
+                user._id ??
+                user.userId
+            );
+
+            return userId !== myId;
+        });
+
+        renderUsers(otherUsers);
+
+    } catch (error) {
+        console.error("Error loading users:", error);
+
+        chatList.innerHTML = `
+            <div class="error-message">
+                Could not load users.
+                <br>
+                <button onclick="loadUsers()">Try Again</button>
+            </div>
+        `;
     }
-
 }
-
-
 
 /* =========================
    RENDER USERS
 ========================= */
 
-function renderUsers(userList) {
-
+function renderUsers(users) {
     chatList.innerHTML = "";
 
-
-    if (userList.length === 0) {
-
+    if (users.length === 0) {
         chatList.innerHTML = `
-            <div class="chat-empty">
-                No other users yet.
+            <div class="empty-users">
+                No other users are available.
+            </div>
+        `;
+        return;
+    }
+
+    users.forEach(user => {
+        const userId = Number(
+            user.id ??
+            user._id ??
+            user.userId
+        );
+
+        const username =
+            user.username ||
+            user.name ||
+            "Unknown User";
+
+        const userElement = document.createElement("button");
+
+        userElement.type = "button";
+        userElement.className = "chat-user";
+
+        /*
+         * Store the REAL database ID on this element.
+         *
+         * This is what prevents:
+         * User A -> User B
+         * accidentally becoming
+         * User A -> User C
+         */
+        userElement.dataset.userId = String(userId);
+
+        userElement.innerHTML = `
+            <div class="user-avatar">
+                ${escapeHTML(username.charAt(0).toUpperCase())}
+            </div>
+
+            <div class="user-info">
+                <span class="user-name">
+                    ${escapeHTML(username)}
+                </span>
             </div>
         `;
 
-        return;
+        userElement.addEventListener("click", () => {
+            selectUser({
+                id: userId,
+                username: username
+            });
+        });
 
-    }
-
-
-    userList.forEach(
-        user => {
-
-            const chatUser =
-                document.createElement(
-                    "div"
-                );
-
-
-            chatUser.className =
-                "chat-user";
-
-
-            chatUser.dataset.id =
-                user.id;
-
-
-            chatUser.dataset.name =
-                user.username;
-
-
-            const firstLetter =
-                user.username
-                    .charAt(0)
-                    .toUpperCase();
-
-
-            chatUser.innerHTML = `
-
-                <div class="avatar">
-                    ${escapeHTML(firstLetter)}
-                </div>
-
-                <div class="chat-info">
-
-                    <h3>
-                        ${escapeHTML(
-                            user.username
-                        )}
-                    </h3>
-
-                    <p>
-                        No messages yet.
-                    </p>
-
-                </div>
-
-                <span class="time"></span>
-
-            `;
-
-
-            chatUser.addEventListener(
-                "click",
-                () => {
-
-                    selectUser(
-                        user
-                    );
-
-                }
-            );
-
-
-            chatList.appendChild(
-                chatUser
-            );
-
-        }
-    );
-
+        chatList.appendChild(userElement);
+    });
 }
-
-
-
-/* =========================
-   OPEN SAVED CHAT
-========================= */
-
-function openSavedChat(
-    userList
-) {
-
-    const savedChat =
-        localStorage.getItem(
-            "chatWith"
-        );
-
-
-    if (!savedChat) {
-
-        /*
-            No selected person yet.
-        */
-
-        return;
-
-    }
-
-
-    try {
-
-        const chatUser =
-            JSON.parse(
-                savedChat
-            );
-
-
-        const user =
-            userList.find(
-                item =>
-                    Number(item.id) ===
-                    Number(chatUser.id)
-            );
-
-
-        if (user) {
-
-            selectUser(
-                user
-            );
-
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "Could not open saved chat:",
-            error
-        );
-
-
-        localStorage.removeItem(
-            "chatWith"
-        );
-
-    }
-
-}
-
-
 
 /* =========================
    SELECT USER
 ========================= */
 
-async function selectUser(
-    user
-) {
+function selectUser(user) {
+    const userId = Number(user.id);
 
-    selectedUser =
-        user;
-
-
-    /*
-        Save current conversation.
-    */
-
-    localStorage.setItem(
-        "chatWith",
-        JSON.stringify({
-            id: user.id,
-            username: user.username
-        })
-    );
-
-
-    /*
-        Update header.
-    */
-
-    currentName.textContent =
-        user.username;
-
-
-    currentAvatar.textContent =
-        user.username
-            .charAt(0)
-            .toUpperCase();
-
-
-    /*
-        Mark active chat.
-    */
-
-    document
-        .querySelectorAll(
-            ".chat-user"
-        )
-        .forEach(
-            chat => {
-
-                chat.classList.remove(
-                    "active"
-                );
-
-            }
-        );
-
-
-    const selectedElement =
-        document.querySelector(
-            `.chat-user[data-id="${user.id}"]`
-        );
-
-
-    if (selectedElement) {
-
-        selectedElement.classList.add(
-            "active"
-        );
-
+    if (!Number.isFinite(userId)) {
+        console.error("Invalid selected user ID:", user);
+        return;
     }
 
+    selectedUser = {
+        id: userId,
+        username: user.username || "Unknown User"
+    };
 
     /*
-        Load messages.
-    */
+     * Save the selected recipient.
+     * This is NOT the logged-in user.
+     */
+    sessionStorage.setItem(
+        "peervaSelectedUser",
+        JSON.stringify(selectedUser)
+    );
 
-    await loadMessages();
+    currentName.textContent = selectedUser.username;
 
+    highlightSelectedUser(userId);
 
-    messageInput.focus();
-
+    loadMessages();
 }
 
+/* =========================
+   HIGHLIGHT SELECTED USER
+========================= */
 
+function highlightSelectedUser(userId) {
+    const users = document.querySelectorAll(".chat-user");
+
+    users.forEach(element => {
+        const elementId = Number(element.dataset.userId);
+
+        element.classList.toggle(
+            "active",
+            elementId === Number(userId)
+        );
+    });
+}
+
+/* =========================
+   RESTORE SELECTED USER
+========================= */
+
+function restoreSelectedUser() {
+    try {
+        const saved = sessionStorage.getItem("peervaSelectedUser");
+
+        if (!saved) {
+            return;
+        }
+
+        const user = JSON.parse(saved);
+
+        if (!user || !user.id) {
+            return;
+        }
+
+        selectUser({
+            id: Number(user.id),
+            username: user.username
+        });
+
+    } catch (error) {
+        console.error("Could not restore selected user:", error);
+    }
+}
 
 /* =========================
    LOAD MESSAGES
 ========================= */
 
 async function loadMessages() {
-
-    if (
-        !currentUser ||
-        !selectedUser
-    ) {
-
+    if (!currentUser || !selectedUser) {
         return;
-
     }
 
+    const myId = getCurrentUserId();
+    const otherUserId = Number(selectedUser.id);
+
+    if (!Number.isFinite(myId) || !Number.isFinite(otherUserId)) {
+        console.error("Invalid message IDs:", {
+            myId,
+            otherUserId
+        });
+        return;
+    }
 
     try {
-
-        const response =
-            await fetch(
-                `${API_URL}/messages/${currentUser.id}/${selectedUser.id}`
-            );
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Could not load messages."
-            );
-
-        }
-
-
-        const messages =
-            await response.json();
-
-
-        renderMessages(
-            messages
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Message loading error:",
-            error
-        );
-
-
         messagesContainer.innerHTML = `
-            <div class="message-error">
-                Could not load messages.
+            <div class="loading-messages">
+                Loading messages...
             </div>
         `;
 
+        /*
+         * The URL contains:
+         *
+         * logged-in user ID
+         * selected recipient ID
+         *
+         * The backend checks both directions:
+         *
+         * me -> them
+         * them -> me
+         */
+        const response = await fetch(
+            `${API_URL}/messages/${encodeURIComponent(myId)}/${encodeURIComponent(otherUserId)}`,
+            {
+                method: "GET",
+                headers: authHeaders()
+            }
+        );
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                handleAuthError();
+                return;
+            }
+
+            throw new Error(
+                `Messages request failed: ${response.status}`
+            );
+        }
+
+        const messages = await response.json();
+
+        if (!Array.isArray(messages)) {
+            throw new Error("Invalid messages response");
+        }
+
+        renderMessages(messages);
+
+    } catch (error) {
+        console.error("Error loading messages:", error);
+
+        messagesContainer.innerHTML = `
+            <div class="error-message">
+                Could not load messages.
+                <br>
+                <button onclick="loadMessages()">Try Again</button>
+            </div>
+        `;
     }
-
 }
-
-
 
 /* =========================
    RENDER MESSAGES
 ========================= */
 
-function renderMessages(
-    messages
-) {
-
+function renderMessages(messages) {
     messagesContainer.innerHTML = "";
 
-
-    const date =
-        document.createElement(
-            "div"
-        );
-
-
-    date.className =
-        "date";
-
-
-    date.textContent =
-        "Today";
-
-
-    messagesContainer.appendChild(
-        date
-    );
-
-
     if (messages.length === 0) {
-
-        const empty =
-            document.createElement(
-                "div"
-            );
-
-
-        empty.className =
-            "empty-chat";
-
-
-        empty.textContent =
-            `Start a conversation with ${selectedUser.username}.`;
-
-
-        messagesContainer.appendChild(
-            empty
-        );
-
+        messagesContainer.innerHTML = `
+            <div class="no-messages">
+                No messages yet.
+                <br>
+                Start the conversation.
+            </div>
+        `;
 
         return;
-
     }
 
+    const myId = getCurrentUserId();
 
-    messages.forEach(
-        message => {
+    messages.forEach(message => {
+        const senderId = Number(
+            message.senderId ??
+            message.sender ??
+            message.from
+        );
 
-            createMessage(
-                message
-            );
+        const text =
+            message.text ??
+            message.message ??
+            "";
 
+        const messageElement = document.createElement("div");
+
+        /*
+         * A message belongs to ME only when the senderId
+         * exactly matches my account ID.
+         *
+         * We do NOT use the selected user's ID to determine
+         * whether a message is mine.
+         */
+        if (senderId === myId) {
+            messageElement.className = "message sent";
+        } else {
+            messageElement.className = "message received";
         }
-    );
 
+        messageElement.innerHTML = `
+            <div class="message-bubble">
+                ${escapeHTML(String(text))}
+            </div>
+        `;
 
-    scrollToBottom();
+        messagesContainer.appendChild(messageElement);
+    });
 
+    scrollMessagesToBottom();
 }
-
-
-
-/* =========================
-   CREATE MESSAGE
-========================= */
-
-function createMessage(
-    message
-) {
-
-    const isSent =
-        Number(message.senderId) ===
-        Number(currentUser.id);
-
-
-    const messageElement =
-        document.createElement(
-            "div"
-        );
-
-
-    messageElement.className =
-        `message ${
-            isSent
-                ? "sent"
-                : "received"
-        }`;
-
-
-    /*
-        Received avatar.
-    */
-
-    if (!isSent) {
-
-        const avatar =
-            document.createElement(
-                "div"
-            );
-
-
-        avatar.className =
-            "message-avatar avatar";
-
-
-        avatar.textContent =
-            selectedUser.username
-                .charAt(0)
-                .toUpperCase();
-
-
-        messageElement.appendChild(
-            avatar
-        );
-
-    }
-
-
-    const content =
-        document.createElement(
-            "div"
-        );
-
-
-    content.className =
-        "message-content";
-
-
-    const text =
-        document.createElement(
-            "p"
-        );
-
-
-    text.textContent =
-        message.text;
-
-
-    const time =
-        document.createElement(
-            "span"
-        );
-
-
-    time.textContent =
-        formatMessageTime(
-            message.createdAt
-        );
-
-
-    content.appendChild(
-        text
-    );
-
-
-    content.appendChild(
-        time
-    );
-
-
-    messageElement.appendChild(
-        content
-    );
-
-
-    messagesContainer.appendChild(
-        messageElement
-    );
-
-}
-
-
 
 /* =========================
    SEND MESSAGE
 ========================= */
 
-async function sendMessage(
-    text
-) {
+async function sendMessage(event) {
+    event.preventDefault();
+
+    if (!currentUser) {
+        alert("Please sign in again.");
+        return;
+    }
 
     if (!selectedUser) {
+        alert("Select a person to chat with first.");
+        return;
+    }
 
-        alert(
-            "Select a student before sending a message."
+    const text = messageInput.value.trim();
+
+    if (!text) {
+        return;
+    }
+
+    const receiverId = Number(selectedUser.id);
+
+    if (!Number.isFinite(receiverId)) {
+        console.error(
+            "Invalid receiver ID:",
+            selectedUser
         );
 
+        alert("Could not identify this user.");
         return;
-
     }
 
+    /*
+     * Prevent sending a message to yourself.
+     */
+    const myId = getCurrentUserId();
 
-    const cleanText =
-        text.trim();
-
-
-    if (!cleanText) {
-
+    if (receiverId === myId) {
+        alert("You cannot send a message to yourself.");
         return;
-
     }
-
-
-    if (cleanText.length > 5000) {
-
-        alert(
-            "Message is too long."
-        );
-
-        return;
-
-    }
-
 
     try {
+        messageInput.disabled = true;
 
-        const response =
-            await fetch(
-                `${API_URL}/messages`,
-                {
-                    method: "POST",
+        /*
+         * VERY IMPORTANT:
+         *
+         * We DO NOT send:
+         *
+         * senderId: myId
+         *
+         * The backend gets the sender from the JWT.
+         *
+         * We ONLY send:
+         *
+         * receiverId
+         * text
+         *
+         * This prevents the browser from accidentally
+         * using another person's ID as the sender.
+         */
+        const response = await fetch(`${API_URL}/messages`, {
+            method: "POST",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+            headers: authHeaders(true),
 
-                    body: JSON.stringify({
-
-                        senderId:
-                            currentUser.id,
-
-                        receiverId:
-                            selectedUser.id,
-
-                        text:
-                            cleanText
-
-                    })
-                }
-            );
-
-
-        const data =
-            await response.json();
-
+            body: JSON.stringify({
+                receiverId: receiverId,
+                text: text
+            })
+        });
 
         if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                handleAuthError();
+                return;
+            }
 
-            alert(
-                data.message ||
-                "Could not send message."
-            );
+            let errorMessage = "Could not send message.";
 
-            return;
+            try {
+                const errorData = await response.json();
 
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                }
+
+            } catch {
+                // Ignore JSON parsing errors.
+            }
+
+            throw new Error(errorMessage);
         }
 
-
+        /*
+         * Clear the input only after the server
+         * successfully accepted the message.
+         */
         messageInput.value = "";
 
-
+        /*
+         * Reload the current conversation.
+         */
         await loadMessages();
 
-
-        updatePreview(
-            selectedUser.id,
-            cleanText,
-            formatMessageTime(
-                data.data.createdAt
-            )
-        );
-
-
-        messageInput.focus();
-
-
     } catch (error) {
+        console.error("Error sending message:", error);
 
-        console.error(
-            "Send message error:",
-            error
-        );
+        alert(error.message || "Could not send message.");
 
-
-        alert(
-            "Could not connect to ChatHub."
-        );
-
+    } finally {
+        messageInput.disabled = false;
+        messageInput.focus();
     }
-
 }
 
-
-
 /* =========================
-   MESSAGE FORM
+   AUTH ERROR
 ========================= */
 
-messageForm.addEventListener(
-    "submit",
-    event => {
+function handleAuthError() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("chathubUser");
 
-        event.preventDefault();
+    sessionStorage.removeItem("peervaSelectedUser");
 
-
-        sendMessage(
-            messageInput.value
-        );
-
-    }
-);
-
-
-
-/* =========================
-   ENTER TO SEND
-========================= */
-
-messageInput.addEventListener(
-    "keydown",
-    event => {
-
-        if (
-            event.key === "Enter" &&
-            !event.shiftKey
-        ) {
-
-            event.preventDefault();
-
-
-            messageForm.requestSubmit();
-
-        }
-
-    }
-);
-
-
-
-/* =========================
-   SEARCH
-========================= */
-
-searchInput.addEventListener(
-    "input",
-    function () {
-
-        const search =
-            this.value
-                .toLowerCase()
-                .trim();
-
-
-        document
-            .querySelectorAll(
-                ".chat-user"
-            )
-            .forEach(
-                chat => {
-
-                    const name =
-                        chat.dataset.name
-                            .toLowerCase();
-
-
-                    if (
-                        name.includes(
-                            search
-                        )
-                    ) {
-
-                        chat.style.display =
-                            "flex";
-
-                    } else {
-
-                        chat.style.display =
-                            "none";
-
-                    }
-
-                }
-            );
-
-    }
-);
-
-
-
-/* =========================
-   UPDATE PREVIEW
-========================= */
-
-function updatePreview(
-    userId,
-    text,
-    time
-) {
-
-    const chat =
-        document.querySelector(
-            `.chat-user[data-id="${userId}"]`
-        );
-
-
-    if (!chat) {
-
-        return;
-
-    }
-
-
-    const preview =
-        chat.querySelector(
-            ".chat-info p"
-        );
-
-
-    const timeElement =
-        chat.querySelector(
-            ".time"
-        );
-
-
-    if (preview) {
-
-        preview.textContent =
-            text;
-
-    }
-
-
-    if (timeElement) {
-
-        timeElement.textContent =
-            time;
-
-    }
-
+    window.location.href = "signin.html";
 }
 
-
-
 /* =========================
-   MESSAGE TIME
+   HTML ESCAPE
 ========================= */
 
-function formatMessageTime(
-    dateString
-) {
-
-    if (!dateString) {
-
-        return "";
-
-    }
-
-
-    const date =
-        new Date(
-            dateString
-        );
-
-
-    return date.toLocaleTimeString(
-        [],
-        {
-            hour: "2-digit",
-            minute: "2-digit"
-        }
-    );
-
+function escapeHTML(value) {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
-
-
-
-/* =========================
-   AUTO REFRESH
-========================= */
-
-setInterval(
-    async () => {
-
-        if (
-            currentUser &&
-            selectedUser
-        ) {
-
-            await loadMessages();
-
-        }
-
-    },
-    2000
-);
-
-
 
 /* =========================
    SCROLL
 ========================= */
 
-function scrollToBottom() {
-
+function scrollMessagesToBottom() {
     messagesContainer.scrollTop =
         messagesContainer.scrollHeight;
-
 }
 
-
-
 /* =========================
-   EMOJI
+   ENTER KEY
 ========================= */
 
-emojiButton.addEventListener(
-    "click",
-    () => {
+if (messageInput) {
+    messageInput.addEventListener("keydown", event => {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
 
-        const emojis = [
-            "😀",
-            "😂",
-            "😍",
-            "😎",
-            "🔥",
-            "❤️",
-            "👍",
-            "👋",
-            "🎉",
-            "🚀"
-        ];
-
-
-        const emoji =
-            emojis[
-                Math.floor(
-                    Math.random() *
-                    emojis.length
-                )
-            ];
-
-
-        messageInput.value +=
-            emoji;
-
-
-        messageInput.focus();
-
-    }
-);
-
-
-
-/* =========================
-   ATTACHMENT
-========================= */
-
-attachButton.addEventListener(
-    "click",
-    () => {
-
-        alert(
-            "File attachments will be added later."
-        );
-
-    }
-);
-
-
-
-/* =========================
-   NEW CHAT
-========================= */
-
-newChatButton.addEventListener(
-    "click",
-    () => {
-
-        searchInput.focus();
-
-    }
-);
-
-
-
-/* =========================
-   LOGOUT
-========================= */
-
-logoutButton.addEventListener(
-    "click",
-    () => {
-
-        const confirmed =
-            confirm(
-                "Are you sure you want to log out?"
-            );
-
-
-        if (!confirmed) {
-
-            return;
-
+            if (messageForm) {
+                messageForm.requestSubmit();
+            }
         }
-
-
-        localStorage.removeItem(
-            "user"
-        );
-
-
-        localStorage.removeItem(
-            "chathubUser"
-        );
-
-
-        localStorage.removeItem(
-            "chatWith"
-        );
-
-
-        window.location.href =
-            "signin.html";
-
-    }
-);
-
-
-
-/* =========================
-   ESCAPE HTML
-========================= */
-
-function escapeHTML(
-    value
-) {
-
-    const div =
-        document.createElement(
-            "div"
-        );
-
-
-    div.textContent =
-        value;
-
-
-    return div.innerHTML;
-
+    });
 }
 
+/* =========================
+   FORM SUBMIT
+========================= */
 
+if (messageForm) {
+    messageForm.addEventListener(
+        "submit",
+        sendMessage
+    );
+}
+
+/* =========================
+   INITIALIZE
+========================= */
+
+async function initializeChat() {
+    if (!checkLogin()) {
+        return;
+    }
+
+    await loadUsers();
+
+    /*
+     * Restore the conversation only after users
+     * have been loaded.
+     */
+    restoreSelectedUser();
+}
 
 /* =========================
    START
 ========================= */
 
-async function startChat() {
+initializeChat();
 
-    const loggedIn =
-        loadCurrentUser();
+/* =========================
+   AUTO REFRESH
+========================= */
 
-
-    if (!loggedIn) {
-
-        return;
-
+/*
+ * Refresh messages every 3 seconds while a chat
+ * is selected.
+ *
+ * This does NOT change the selected recipient.
+ */
+setInterval(() => {
+    if (selectedUser && currentUser) {
+        loadMessages();
     }
+}, 3000);
 
-
-    await loadUsers();
-
-}
-
-
-startChat();
