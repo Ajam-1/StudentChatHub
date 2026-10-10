@@ -1,54 +1,41 @@
+const API_URL = "https://parva-backend-49br.onrender.com";
 
-const API_URL =
-    "https://peerva-backend.onrender.com";
+const currentUser = JSON.parse(localStorage.getItem("chathubUser"));
 
-const currentUser =
-    JSON.parse(
-        localStorage.getItem("chathubUser")
-    );
+const usernameElement = document.getElementById("username");
+const usersContainer = document.getElementById("users");
+const search = document.getElementById("search");
+const logout = document.getElementById("logout");
 
-const usernameElement =
-    document.getElementById("username");
+let allUsers = [];
 
-const usersContainer =
-    document.getElementById("users");
 
-const search =
-    document.getElementById("search");
+/* =========================
+   HELPERS
+========================= */
 
-const logout =
-    document.getElementById("logout");
+function getToken() {
+    return localStorage.getItem("token");
+}
+
+function clearSession() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("chathubUser");
+    localStorage.removeItem("chatWith");
+}
 
 
 /* =========================
    CHECK LOGIN
 ========================= */
 
-if (!currentUser) {
-
-    window.location.href =
-        "signin.html";
-}
-
-
-/* =========================
-   SHOW CURRENT USER
-========================= */
-
-if (currentUser) {
-
-    usernameElement.textContent =
-        currentUser.username;
-}
-
-
-/* =========================
-   GET TOKEN
-========================= */
-
-function getToken() {
-
-    return localStorage.getItem("token");
+// No saved user or no token means the person is not properly signed in
+if (!currentUser || !getToken()) {
+    clearSession();
+    window.location.href = "signin.html";
+} else {
+    usernameElement.textContent = currentUser.username;
 }
 
 
@@ -57,115 +44,38 @@ function getToken() {
 ========================= */
 
 async function loadUsers() {
-
-    usersContainer.innerHTML = `
-        <p>Loading users...</p>
-    `;
-
-
-    const token =
-        getToken();
-
-
-    /*
-     * The backend requires authentication.
-     *
-     * Send the JWT with the request.
-     */
-
-    if (!token) {
-
-        usersContainer.innerHTML = `
-            <p>
-                Your session has expired.
-                Please sign in again.
-            </p>
-        `;
-
-        return;
-    }
-
+    usersContainer.innerHTML = "<p>Loading users... (the server may take a moment to wake up)</p>";
 
     try {
+        const response = await fetch(`${API_URL}/users`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${getToken()}`
+            }
+        });
 
-        const response =
-            await fetch(
-                `${API_URL}/users`,
-                {
-                    method: "GET",
-
-                    headers: {
-                        Authorization:
-                            `Bearer ${token}`
-                    }
-                }
-            );
-
-
-        /*
-         * Token is invalid/expired.
-         */
-
-        if (
-            response.status === 401 ||
-            response.status === 403
-        ) {
-
-            localStorage.removeItem(
-                "token"
-            );
-
-            localStorage.removeItem(
-                "chathubUser"
-            );
-
-            localStorage.removeItem(
-                "chatWith"
-            );
-
-            window.location.href =
-                "signin.html";
-
+        // Token is invalid or expired
+        if (response.status === 401 || response.status === 403) {
+            clearSession();
+            window.location.href = "signin.html";
             return;
         }
 
-
         if (!response.ok) {
-
-            throw new Error(
-                `Server returned ${response.status}`
-            );
+            throw new Error(`Server returned ${response.status}`);
         }
 
-
-        const users =
-            await response.json();
-
-
-        console.log(
-            "Users received:",
-            users
-        );
-
+        const users = await response.json();
 
         if (!Array.isArray(users)) {
-
-            throw new Error(
-                "Server did not return a users array."
-            );
+            throw new Error("Server did not return a users array.");
         }
 
-
-        displayUsers(users);
-
+        allUsers = users;
+        displayUsers();
 
     } catch (error) {
-
-        console.error(
-            "Could not load users:",
-            error
-        );
-
+        console.error("Could not load users:", error);
 
         usersContainer.innerHTML = `
             <p>
@@ -182,114 +92,44 @@ async function loadUsers() {
    DISPLAY USERS
 ========================= */
 
-function displayUsers(users) {
+function displayUsers() {
+    const searchText = search.value.toLowerCase().trim();
 
-    const searchText =
-        search.value
-            .toLowerCase()
-            .trim();
+    const filteredUsers = allUsers.filter(user => {
+        // MongoDB IDs are strings, so compare them as strings (not numbers)
+        if (String(user.id) === String(currentUser.id)) {
+            return false;
+        }
 
+        return (user.username || "").toLowerCase().includes(searchText);
+    });
 
-    const filteredUsers =
-        users.filter(user => {
-
-            /*
-             * Never display the
-             * currently logged-in user.
-             */
-
-            if (
-                Number(user.id) ===
-                Number(currentUser.id)
-            ) {
-
-                return false;
-            }
-
-
-            return (
-                user.username || ""
-            )
-                .toLowerCase()
-                .includes(searchText);
-        });
-
-
-    if (
-        filteredUsers.length === 0
-    ) {
-
-        usersContainer.innerHTML = `
-            <p>
-                No students found.
-            </p>
-        `;
-
+    if (filteredUsers.length === 0) {
+        usersContainer.innerHTML = "<p>No students found.</p>";
         return;
     }
 
-
     usersContainer.innerHTML = "";
 
-
     filteredUsers.forEach(user => {
+        const userElement = document.createElement("div");
+        userElement.className = "user";
 
-        const userElement =
-            document.createElement("div");
+        const name = document.createElement("span");
+        name.className = "user-name";
+        name.textContent = user.username;
 
-        userElement.className =
-            "user";
+        const button = document.createElement("button");
+        button.className = "chat-button";
+        button.textContent = "Chat";
 
+        button.addEventListener("click", () => {
+            startChat(user);
+        });
 
-        const name =
-            document.createElement("span");
-
-        name.className =
-            "user-name";
-
-        name.textContent =
-            user.username;
-
-
-        const button =
-            document.createElement("button");
-
-        button.className =
-            "chat-button";
-
-        button.textContent =
-            "Chat";
-
-
-        /*
-         * IMPORTANT:
-         *
-         * Store the EXACT user ID
-         * returned by the backend.
-         */
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                startChat(user);
-            }
-        );
-
-
-        userElement.appendChild(
-            name
-        );
-
-        userElement.appendChild(
-            button
-        );
-
-
-        usersContainer.appendChild(
-            userElement
-        );
-
+        userElement.appendChild(name);
+        userElement.appendChild(button);
+        usersContainer.appendChild(userElement);
     });
 }
 
@@ -298,10 +138,8 @@ function displayUsers(users) {
    SEARCH USERS
 ========================= */
 
-search.addEventListener(
-    "input",
-    loadUsers
-);
+// Filters the list already loaded, so it does not call the server on every keystroke
+search.addEventListener("input", displayUsers);
 
 
 /* =========================
@@ -309,28 +147,15 @@ search.addEventListener(
 ========================= */
 
 function startChat(user) {
-
-    /*
-     * Save ONLY the selected person.
-     *
-     * chat.js will read this later.
-     */
-
     localStorage.setItem(
         "chatWith",
         JSON.stringify({
-
-            id:
-                user.id,
-
-            username:
-                user.username
+            id: user.id,
+            username: user.username
         })
     );
 
-
-    window.location.href =
-        "chat.html";
+    window.location.href = "chat.html";
 }
 
 
@@ -338,50 +163,22 @@ function startChat(user) {
    LOGOUT
 ========================= */
 
-logout.addEventListener(
-    "click",
-    () => {
+logout.addEventListener("click", () => {
+    const confirmed = confirm("Are you sure you want to log out?");
 
-        const confirmed =
-            confirm(
-                "Are you sure you want to log out?"
-            );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
-        localStorage.removeItem(
-            "token"
-        );
-
-        localStorage.removeItem(
-            "user"
-        );
-
-        localStorage.removeItem(
-            "chathubUser"
-        );
-
-        localStorage.removeItem(
-            "chatWith"
-        );
-
-
-        window.location.href =
-            "signin.html";
+    if (!confirmed) {
+        return;
     }
-);
+
+    clearSession();
+    window.location.href = "signin.html";
+});
 
 
 /* =========================
    START
 ========================= */
 
-if (currentUser) {
-
+if (currentUser && getToken()) {
     loadUsers();
 }
-
