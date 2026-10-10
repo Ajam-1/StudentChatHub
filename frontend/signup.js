@@ -1,4 +1,4 @@
-const API_URL = "https://peerva-backend.onrender.com";
+const API_URL = "https://parva-backend-49br.onrender.com";
 
 const form = document.getElementById("signup-form");
 const message = document.getElementById("message");
@@ -13,6 +13,11 @@ form.addEventListener("submit", async (event) => {
 
   if (!username || !email || !password) {
     message.textContent = "Please fill in all fields.";
+    return;
+  }
+
+  if (username.length < 3) {
+    message.textContent = "Username must be at least 3 characters.";
     return;
   }
 
@@ -43,13 +48,12 @@ form.addEventListener("submit", async (event) => {
       return;
     }
 
-    localStorage.setItem("user", JSON.stringify(data.user));
-    localStorage.setItem("chathubUser", JSON.stringify(data.user));
-
-    message.textContent = "Account created!";
+    // The server does not return a login token on signup,
+    // so send the user to the sign-in page to log in properly.
+    message.textContent = "Account created! Redirecting to sign in...";
     setTimeout(() => {
-      window.location.href = "studentchat.html";
-    }, 500);
+      window.location.href = "signin.html"; // change if your sign-in page has a different name
+    }, 800);
   } catch (error) {
     console.error("Peerva connection error:", error);
     message.textContent = "Could not connect to Peerva. Please try again.";
