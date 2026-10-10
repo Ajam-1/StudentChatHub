@@ -14,15 +14,18 @@ const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+
+// Forces the database name so users are never saved into the default "test" database
+const DB_NAME = process.env.DB_NAME || "peerva";
 
 if (!JWT_SECRET) {
-    console.error("JWT_SECRET is not set. Add it in your environment variables.");
+    console.error("JWT_SECRET is not set. Add it in your Render environment variables.");
     process.exit(1);
 }
 
 if (!MONGO_URI) {
-    console.error("MONGO_URI is not set. Add it in your environment variables.");
+    console.error("MONGO_URI is not set. Add it in your Render environment variables.");
     process.exit(1);
 }
 
@@ -39,7 +42,7 @@ app.use(
     })
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 
 
 /* =========================
@@ -97,7 +100,6 @@ function safeUser(user) {
     };
 }
 
-// Keeps the same shape your frontend already expects
 function formatMessage(message) {
     return {
         id: message._id,
@@ -106,6 +108,16 @@ function formatMessage(message) {
         text: message.text,
         createdAt: message.createdAt
     };
+}
+
+// Stops requests from hanging if the database is not connected
+function requireDatabase(req, res, next) {
+    if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({
+            message: "Server is starting up. Please try again in a few seconds."
+        });
+    }
+    next();
 }
 
 
@@ -138,13 +150,24 @@ function authenticateToken(req, res, next) {
 
 
 /* =========================
-   HOME
+   HOME AND HEALTH
 ========================= */
 
 app.get("/", (req, res) => {
     res.json({
         message: "Peerva backend is running!",
-        status: "online"
+        status: "online",
+        database:
+            mongoose.connection.readyState === 1
+                ? mongoose.connection.name
+                : "not connected"
+    });
+});
+
+app.get("/health", (req, res) => {
+    const connected = mongoose.connection.readyState === 1;
+    res.status(connected ? 200 : 503).json({
+        status: connected ? "ok" : "database not connected"
     });
 });
 
@@ -153,7 +176,7 @@ app.get("/", (req, res) => {
    SIGN UP
 ========================= */
 
-app.post("/signup", async (req, res) => {
+app.post("/signup", requireDatabase, async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
@@ -199,13 +222,14 @@ app.post("/signup", async (req, res) => {
             password: hashedPassword
         });
 
+        console.log("New user saved:", user.email, "in database:", mongoose.connection.name);
+
         res.status(201).json({
             message: "Peerva account created! Please sign in.",
             user: safeUser(user)
         });
 
     } catch (error) {
-        // Duplicate key (two signups at the same moment)
         if (error.code === 11000) {
             return res.status(400).json({
                 message: "Email or username already exists."
@@ -225,7 +249,7 @@ app.post("/signup", async (req, res) => {
    LOGIN
 ========================= */
 
-app.post("/login", async (req, res) => {
+app.post("/login", requireDatabase, async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -240,6 +264,7 @@ app.post("/login", async (req, res) => {
         const user = await User.findOne({ email: cleanEmail });
 
         if (!user) {
+            console.log("Login failed: no user found for", cleanEmail);
             return res.status(401).json({
                 message: "Incorrect email or password."
             });
@@ -251,6 +276,7 @@ app.post("/login", async (req, res) => {
         );
 
         if (!passwordCorrect) {
+            console.log("Login failed: wrong password for", cleanEmail);
             return res.status(401).json({
                 message: "Incorrect email or password."
             });
@@ -286,7 +312,7 @@ app.post("/login", async (req, res) => {
    GET CURRENT USER
 ========================= */
 
-app.get("/me", authenticateToken, async (req, res) => {
+app.get("/me", requireDatabase, authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
 
@@ -307,7 +333,7 @@ app.get("/me", authenticateToken, async (req, res) => {
    GET USERS
 ========================= */
 
-app.get("/users", authenticateToken, async (req, res) => {
+app.get("/users", requireDatabase, authenticateToken, async (req, res) => {
     try {
         const users = await User.find({
             _id: { $ne: req.user.id }
@@ -333,6 +359,7 @@ app.get("/users", authenticateToken, async (req, res) => {
 
 app.get(
     "/messages/:userId/:otherUserId",
+    requireDatabase,
     authenticateToken,
     async (req, res) => {
         try {
@@ -345,7 +372,6 @@ app.get(
                 return res.status(400).json({ message: "Invalid user ID." });
             }
 
-            // Security check
             if (userId !== String(req.user.id)) {
                 return res.status(403).json({
                     message: "You cannot access another user's conversation."
@@ -373,7 +399,7 @@ app.get(
    SEND MESSAGE
 ========================= */
 
-app.post("/messages", authenticateToken, async (req, res) => {
+app.post("/messages", requireDatabase, authenticateToken, async (req, res) => {
     try {
         const { receiverId, text } = req.body;
 
@@ -428,13 +454,34 @@ app.post("/messages", authenticateToken, async (req, res) => {
 
 
 /* =========================
+   404 AND ERROR HANDLING
+========================= */
+
+app.use((req, res) => {
+    res.status(404).json({ message: "Route not found." });
+});
+
+app.use((error, req, res, next) => {
+    console.error("Unhandled error:", error);
+    res.status(500).json({ message: "Something went wrong." });
+});
+
+process.on("unhandledRejection", reason => {
+    console.error("Unhandled promise rejection:", reason);
+});
+
+
+/* =========================
    START SERVER
 ========================= */
 
 mongoose
-    .connect(MONGO_URI)
+    .connect(MONGO_URI, {
+        dbName: DB_NAME,
+        serverSelectionTimeoutMS: 15000
+    })
     .then(() => {
-        console.log("MongoDB connected");
+        console.log("MongoDB connected to database:", mongoose.connection.name);
 
         app.listen(PORT, HOST, () => {
             console.log(`Peerva backend running on ${HOST}:${PORT}`);
