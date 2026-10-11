@@ -150,6 +150,114 @@ function showChatPartner() {
 
 
 /* =========================
+   PUSH NOTIFICATIONS
+========================= */
+
+function pushSupported() {
+    return (
+        "serviceWorker" in navigator &&
+        "PushManager" in window &&
+        "Notification" in window
+    );
+}
+
+// Converts the server's public key into the format the browser needs
+function urlBase64ToUint8Array(base64) {
+    const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+    const raw = atob((base64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from([...raw].map(character => character.charCodeAt(0)));
+}
+
+// Registers the service worker, subscribes this device, and tells the server about it
+async function subscribeToPush() {
+    const registration = await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.ready;
+
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+        const keyResponse = await fetch(`${API_URL}/push/public-key`);
+
+        if (!keyResponse.ok) {
+            throw new Error("Notifications are not available on the server yet.");
+        }
+
+        const { publicKey } = await keyResponse.json();
+
+        subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+    }
+
+    // Always send it to the server, so this device is linked to whoever is signed in now
+    const response = await fetch(`${API_URL}/subscribe`, {
+        method: "POST",
+        headers: authHeaders(true),
+        body: JSON.stringify({ subscription })
+    });
+
+    if (response.status === 401 || response.status === 403) {
+        handleAuthError();
+        return;
+    }
+
+    if (!response.ok) {
+        throw new Error("Could not save your notification settings.");
+    }
+}
+
+function setupNotificationButton() {
+    if (!pushSupported()) {
+        return;
+    }
+
+    // Already allowed: quietly keep this device subscribed
+    if (Notification.permission === "granted") {
+        subscribeToPush().catch(error => {
+            console.error("Push setup failed:", error);
+        });
+        return;
+    }
+
+    // The user blocked notifications, so there is nothing we can ask
+    if (Notification.permission === "denied") {
+        return;
+    }
+
+    const button = document.createElement("button");
+    button.id = "enable-notifications";
+    button.type = "button";
+    button.textContent = "Enable notifications";
+
+    // Browsers only allow the permission popup after a click
+    button.addEventListener("click", async () => {
+        button.disabled = true;
+
+        try {
+            const permission = await Notification.requestPermission();
+
+            if (permission !== "granted") {
+                button.disabled = false;
+                return;
+            }
+
+            await subscribeToPush();
+            button.remove();
+
+        } catch (error) {
+            console.error("Could not enable notifications:", error);
+            alert(error.message || "Could not enable notifications.");
+            button.disabled = false;
+        }
+    });
+
+    const header = currentName ? currentName.parentElement : null;
+    (header || document.body).appendChild(button);
+}
+
+
+/* =========================
    LOAD MESSAGES
 ========================= */
 
@@ -410,6 +518,7 @@ async function initializeChat() {
     }
 
     showChatPartner();
+    setupNotificationButton();
 
     await loadMessages();
 }
