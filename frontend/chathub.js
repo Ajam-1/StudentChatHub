@@ -8,6 +8,39 @@ const search = document.getElementById("search");
 const logout = document.getElementById("logout");
 
 let allUsers = [];
+let unreadCounts = {};
+
+
+/* =========================
+   BADGE STYLE
+========================= */
+
+// Added from here so you don't have to edit your CSS file. Move it there if you like.
+const badgeStyle = document.createElement("style");
+badgeStyle.textContent = `
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
+    }
+    .unread-badge {
+        background: #25d366;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+`;
+document.head.appendChild(badgeStyle);
 
 
 /* =========================
@@ -72,6 +105,10 @@ async function loadUsers() {
         }
 
         allUsers = users;
+
+        // Get the unread counts first so the badges show on the first draw
+        await refreshUnread(true);
+
         displayUsers();
 
     } catch (error) {
@@ -84,6 +121,46 @@ async function loadUsers() {
                 Please try again.
             </p>
         `;
+    }
+}
+
+
+/* =========================
+   UNREAD COUNTS
+========================= */
+
+// Asks the server how many unread messages there are from each person
+async function refreshUnread(skipRedraw = false) {
+    try {
+        const response = await fetch(`${API_URL}/unread`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${getToken()}`
+            }
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            clearSession();
+            window.location.href = "signin.html";
+            return;
+        }
+
+        if (!response.ok) {
+            return;
+        }
+
+        const counts = await response.json();
+
+        const changed = JSON.stringify(counts) !== JSON.stringify(unreadCounts);
+        unreadCounts = counts;
+
+        // Only redraw when something changed, so the list doesn't flicker
+        if (changed && !skipRedraw && allUsers.length > 0) {
+            displayUsers();
+        }
+
+    } catch (error) {
+        console.error("Could not load unread counts:", error);
     }
 }
 
@@ -115,9 +192,23 @@ function displayUsers() {
         const userElement = document.createElement("div");
         userElement.className = "user";
 
+        const info = document.createElement("div");
+        info.className = "user-info";
+
         const name = document.createElement("span");
         name.className = "user-name";
         name.textContent = user.username;
+
+        info.appendChild(name);
+
+        const unread = unreadCounts[String(user.id)] || 0;
+
+        if (unread > 0) {
+            const badge = document.createElement("span");
+            badge.className = "unread-badge";
+            badge.textContent = unread > 99 ? "99+" : String(unread);
+            info.appendChild(badge);
+        }
 
         const button = document.createElement("button");
         button.className = "chat-button";
@@ -127,7 +218,7 @@ function displayUsers() {
             startChat(user);
         });
 
-        userElement.appendChild(name);
+        userElement.appendChild(info);
         userElement.appendChild(button);
         usersContainer.appendChild(userElement);
     });
@@ -182,3 +273,14 @@ logout.addEventListener("click", () => {
 if (currentUser && getToken()) {
     loadUsers();
 }
+
+
+/* =========================
+   AUTO REFRESH BADGES
+========================= */
+
+setInterval(() => {
+    if (currentUser && getToken() && !document.hidden) {
+        refreshUnread();
+    }
+}, 5000);
