@@ -100,12 +100,15 @@ const messageSchema = new mongoose.Schema(
             ref: "User",
             required: true
         },
-        text: { type: String, required: true }
+        text: { type: String, required: true },
+        // false = the receiver has not opened this message yet
+        read: { type: Boolean, default: false }
     },
     { timestamps: true }
 );
 
 messageSchema.index({ senderId: 1, receiverId: 1, createdAt: 1 });
+messageSchema.index({ receiverId: 1, read: 1 });
 
 const subscriptionSchema = new mongoose.Schema(
     {
@@ -166,6 +169,7 @@ async function pushToUser(userId, title, body) {
     if (!pushEnabled) return;
 
     const subs = await Subscription.find({ userId });
+    console.log(`Push: found ${subs.length} device(s) for user ${userId}`);
 
     const payload = JSON.stringify({
         title,
@@ -525,6 +529,61 @@ app.post("/messages", requireDatabase, authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error("Send message error:", error);
+        res.status(500).json({ message: "Something went wrong." });
+    }
+});
+
+
+/* =========================
+   UNREAD MESSAGES
+========================= */
+
+// Returns how many unread messages the signed-in user has from each person
+// Example: { "6acaaf...": 3, "6bd012...": 1 }
+app.get("/unread", requireDatabase, authenticateToken, async (req, res) => {
+    try {
+        const counts = await Message.aggregate([
+            {
+                $match: {
+                    receiverId: new mongoose.Types.ObjectId(String(req.user.id)),
+                    read: false
+                }
+            },
+            { $group: { _id: "$senderId", count: { $sum: 1 } } }
+        ]);
+
+        const result = {};
+
+        counts.forEach(item => {
+            result[String(item._id)] = item.count;
+        });
+
+        res.json(result);
+
+    } catch (error) {
+        console.error("Unread error:", error);
+        res.status(500).json({ message: "Something went wrong." });
+    }
+});
+
+// Marks every message from one person to the signed-in user as read
+app.post("/messages/read", requireDatabase, authenticateToken, async (req, res) => {
+    try {
+        const { otherUserId } = req.body;
+
+        if (!otherUserId || !mongoose.isValidObjectId(otherUserId)) {
+            return res.status(400).json({ message: "Invalid user." });
+        }
+
+        await Message.updateMany(
+            { senderId: otherUserId, receiverId: req.user.id, read: false },
+            { $set: { read: true } }
+        );
+
+        res.sendStatus(200);
+
+    } catch (error) {
+        console.error("Mark read error:", error);
         res.status(500).json({ message: "Something went wrong." });
     }
 });
