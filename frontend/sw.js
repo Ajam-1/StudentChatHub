@@ -1,32 +1,31 @@
-const webpush = require('web-push');
+self.addEventListener("push", event => {
+    const data = event.data ? event.data.json() : { title: "Peerva", body: "New message" };
 
-webpush.setVapidDetails(
-  'mailto:you@example.com',
-  process.env.VAPID_PUBLIC,
-  process.env.VAPID_PRIVATE
-);
+    event.waitUntil(
+        clients.matchAll({ type: "window", includeUncontrolled: true }).then(windowClients => {
+            // Skip the notification if the user is already looking at the site
+            const siteIsOpen = windowClients.some(c => c.visibilityState === "visible");
+            if (siteIsOpen) return;
 
-// Save a user's subscription (use your database, not memory)
-app.post('/subscribe', async (req, res) => {
-  const { userId, subscription } = req.body;
-  await db.saveSubscription(userId, subscription);
-  res.sendStatus(201);
+            return self.registration.showNotification(data.title, {
+                body: data.body,
+                icon: "/icon.png",
+                data: { url: data.url || "/" }
+            });
+        })
+    );
 });
 
-// Call this when a message arrives for a user who is offline
-async function pushToUser(userId, sender, text) {
-  const subs = await db.getSubscriptions(userId);
-  for (const sub of subs) {
-    try {
-      await webpush.sendNotification(
-        sub,
-        JSON.stringify({ title: sender, body: text, url: '/' })
-      );
-    } catch (err) {
-      // Subscription expired or was revoked, so remove it
-      if (err.statusCode === 404 || err.statusCode === 410) {
-        await db.deleteSubscription(sub.endpoint);
-      }
-    }
-  }
-}
+self.addEventListener("notificationclick", event => {
+    event.notification.close();
+    const url = event.notification.data.url;
+
+    event.waitUntil(
+        clients.matchAll({ type: "window", includeUncontrolled: true }).then(windowClients => {
+            for (const c of windowClients) {
+                if ("focus" in c) return c.focus();
+            }
+            return clients.openWindow(url);
+        })
+    );
+});
