@@ -17,6 +17,7 @@ const currentName = document.getElementById("current-name");
 let currentUser = null;
 let chatWith = null;
 let isLoadingMessages = false;
+let lastReceivedCount = -1;
 
 
 /* =========================
@@ -258,6 +259,28 @@ function setupNotificationButton() {
 
 
 /* =========================
+   MARK MESSAGES AS READ
+========================= */
+
+// Tells the server the user has seen this conversation, so the unread badge disappears
+async function markAsRead() {
+    if (!chatWith) {
+        return;
+    }
+
+    try {
+        await fetch(`${API_URL}/messages/read`, {
+            method: "POST",
+            headers: authHeaders(true),
+            body: JSON.stringify({ otherUserId: toId(chatWith.id) })
+        });
+    } catch (error) {
+        console.error("Could not mark messages as read:", error);
+    }
+}
+
+
+/* =========================
    LOAD MESSAGES
 ========================= */
 
@@ -311,6 +334,17 @@ async function loadMessages() {
         }
 
         renderMessages(messages);
+
+        // Only mark as read while the user is actually looking at the chat
+        const received = messages.filter(message => {
+            const senderId = toId(message.senderId ?? message.sender ?? message.from);
+            return senderId !== myId;
+        }).length;
+
+        if (!document.hidden && received !== lastReceivedCount) {
+            lastReceivedCount = received;
+            markAsRead();
+        }
 
     } catch (error) {
         console.error("Could not load messages:", error);
