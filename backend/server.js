@@ -3,6 +3,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const webpush = require("web-push");
 
 const app = express();
 
@@ -19,6 +20,14 @@ const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 // Forces the database name so users are never saved into the default "test" database
 const DB_NAME = process.env.DB_NAME || "peerva";
 
+// Push notification keys (add these in your Render environment variables)
+const VAPID_PUBLIC = process.env.VAPID_PUBLIC;
+const VAPID_PRIVATE = process.env.VAPID_PRIVATE;
+const VAPID_EMAIL = process.env.VAPID_EMAIL || "mailto:you@example.com";
+
+// Page that opens when someone taps a notification. Change if your chat page lives elsewhere.
+const CHAT_PAGE_URL = process.env.CHAT_PAGE_URL || "/studentchat.html";
+
 if (!JWT_SECRET) {
     console.error("JWT_SECRET is not set. Add it in your Render environment variables.");
     process.exit(1);
@@ -27,6 +36,20 @@ if (!JWT_SECRET) {
 if (!MONGO_URI) {
     console.error("MONGO_URI is not set. Add it in your Render environment variables.");
     process.exit(1);
+}
+
+// The server still runs without push keys, it just won't send notifications
+let pushEnabled = false;
+
+if (VAPID_PUBLIC && VAPID_PRIVATE) {
+    try {
+        webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
+        pushEnabled = true;
+    } catch (error) {
+        console.error("Invalid VAPID keys, push notifications disabled:", error.message);
+    }
+} else {
+    console.warn("VAPID_PUBLIC / VAPID_PRIVATE not set. Push notifications are disabled.");
 }
 
 
@@ -84,8 +107,26 @@ const messageSchema = new mongoose.Schema(
 
 messageSchema.index({ senderId: 1, receiverId: 1, createdAt: 1 });
 
+const subscriptionSchema = new mongoose.Schema(
+    {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+            index: true
+        },
+        endpoint: { type: String, required: true, unique: true },
+        keys: {
+            p256dh: { type: String, required: true },
+            auth: { type: String, required: true }
+        }
+    },
+    { timestamps: true }
+);
+
 const User = mongoose.model("User", userSchema);
 const Message = mongoose.model("Message", messageSchema);
+const Subscription = mongoose.model("Subscription", subscriptionSchema);
 
 
 /* =========================
@@ -118,6 +159,37 @@ function requireDatabase(req, res, next) {
         });
     }
     next();
+}
+
+// Sends a push notification to every device a user has subscribed
+async function pushToUser(userId, title, body) {
+    if (!pushEnabled) return;
+
+    const subs = await Subscription.find({ userId });
+
+    const payload = JSON.stringify({
+        title,
+        body: body.length > 100 ? body.slice(0, 97) + "..." : body,
+        url: CHAT_PAGE_URL
+    });
+
+    await Promise.all(
+        subs.map(async sub => {
+            try {
+                await webpush.sendNotification(
+                    { endpoint: sub.endpoint, keys: sub.keys },
+                    payload
+                );
+            } catch (error) {
+                // Subscription expired or was revoked, so remove it
+                if (error.statusCode === 404 || error.statusCode === 410) {
+                    await Subscription.deleteOne({ endpoint: sub.endpoint });
+                } else {
+                    console.error("Push error:", error.statusCode || error.message);
+                }
+            }
+        })
+    );
 }
 
 
@@ -446,8 +518,81 @@ app.post("/messages", requireDatabase, authenticateToken, async (req, res) => {
             data: formatMessage(newMessage)
         });
 
+        // Notify the receiver after replying, so sending is never slowed down or broken by push
+        pushToUser(receiverId, req.user.username, cleanText).catch(error => {
+            console.error("Push notification failed:", error.message);
+        });
+
     } catch (error) {
         console.error("Send message error:", error);
+        res.status(500).json({ message: "Something went wrong." });
+    }
+});
+
+
+/* =========================
+   PUSH NOTIFICATIONS
+========================= */
+
+// The frontend fetches this so you don't have to paste the key into your code
+app.get("/push/public-key", (req, res) => {
+    if (!pushEnabled) {
+        return res.status(503).json({ message: "Push notifications are not enabled." });
+    }
+    res.json({ publicKey: VAPID_PUBLIC });
+});
+
+app.post("/subscribe", requireDatabase, authenticateToken, async (req, res) => {
+    try {
+        const { subscription } = req.body;
+
+        if (
+            !subscription ||
+            !subscription.endpoint ||
+            !subscription.keys ||
+            !subscription.keys.p256dh ||
+            !subscription.keys.auth
+        ) {
+            return res.status(400).json({ message: "Invalid subscription." });
+        }
+
+        // The user comes from the login token, not from the request body
+        await Subscription.findOneAndUpdate(
+            { endpoint: subscription.endpoint },
+            {
+                userId: req.user.id,
+                endpoint: subscription.endpoint,
+                keys: {
+                    p256dh: subscription.keys.p256dh,
+                    auth: subscription.keys.auth
+                }
+            },
+            { upsert: true }
+        );
+
+        res.sendStatus(201);
+
+    } catch (error) {
+        console.error("Subscribe error:", error);
+        res.status(500).json({ message: "Something went wrong." });
+    }
+});
+
+// Call this on logout so the device stops getting that user's notifications
+app.post("/unsubscribe", requireDatabase, authenticateToken, async (req, res) => {
+    try {
+        const { endpoint } = req.body;
+
+        if (!endpoint) {
+            return res.status(400).json({ message: "Endpoint is required." });
+        }
+
+        await Subscription.deleteOne({ endpoint, userId: req.user.id });
+
+        res.sendStatus(200);
+
+    } catch (error) {
+        console.error("Unsubscribe error:", error);
         res.status(500).json({ message: "Something went wrong." });
     }
 });
