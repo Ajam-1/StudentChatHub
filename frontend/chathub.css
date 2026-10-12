@@ -1,35 +1,55 @@
 /* ==========================================================
-   ChatHub - chathub.css  (users page, WhatsApp + Snapchat look)
+   ChatHub - chathub.css  (users page)
 
-   Matches chat.css: yellow top bar, WhatsApp-style list rows,
-   green action button.
 
+   Same look as chat.css so the two pages feel like one app.
    Works with your existing markup:
      header > h1 + .account (#username, #logout)
      main > .welcome (h2, p) + #search + #users
      #users > .user (.user-name + .chat-button)
      #users > p  (loading / empty message)
 
-   Optional: <div class="user-avatar">A</div> before .user-name
-   shows a letter avatar.
+
+   Optional: put <div class="user-avatar">A</div> before
+   .user-name inside each .user to show a letter avatar.
+
+
+   Palette
+     ink       #181B3A  header
+     paper     #F3F4FA  page background
+     indigo    #4B4FE0  buttons
+     marigold  #FFB020  accent
+     green     #2FBF71  online
+   Type: Bricolage Grotesque (headings) + Figtree (body)
    ========================================================== */
 
-@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap");
+
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap");
+
 
 :root {
-    --snap: #fffc00;
-    --black: #111111;
+    --ink: #181b3a;
+    --ink-soft: #242852;
+    --ink-line: #323768;
+    --paper: #f3f4fa;
+    --dot: #d3d6ec;
     --white: #ffffff;
-    --page: #f0f2f5;
-    --green: #00a884;
-    --green-dark: #008f6f;
-    --text: #111b21;
-    --muted: #667781;
-    --line: #e9edef;
-    --hover: #f5f6f6;
+    --line: #e3e5f3;
+    --indigo: #4b4fe0;
+    --indigo-dark: #3a3ec2;
+    --indigo-soft: #e8e9fb;
+    --marigold: #ffb020;
+    --green: #2fbf71;
+    --text: #1e2142;
+    --muted: #6b6f94;
+    --on-dark: #e8e9f7;
+    --on-dark-muted: #9a9dc6;
 
-    --font: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+
+    --font-head: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
 }
+
 
 *,
 *::before,
@@ -39,19 +59,24 @@
     box-sizing: border-box;
 }
 
+
 html {
     -webkit-text-size-adjust: 100%;
 }
 
+
 body {
     min-height: 100vh;
     min-height: 100dvh;
-    font-family: var(--font);
+    font-family: var(--font-body);
     font-size: 15px;
     color: var(--text);
-    background: var(--page);
+    background-color: var(--paper);
+    background-image: radial-gradient(var(--dot) 1.2px, transparent 1.2px);
+    background-size: 22px 22px;
     -webkit-font-smoothing: antialiased;
 }
+
 
 button,
 input {
@@ -59,20 +84,25 @@ input {
     color: inherit;
 }
 
+
 button {
     cursor: pointer;
     border: 0;
 }
 
+
 :focus-visible {
-    outline: 3px solid var(--black);
+    outline: 3px solid var(--marigold);
     outline-offset: 2px;
 }
 
 
+
+
 /* =========================
-   HEADER  (Snapchat yellow bar)
+   HEADER
 ========================= */
+
 
 header {
     position: sticky;
@@ -82,18 +112,21 @@ header {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    height: 64px;
-    padding: 0 24px;
-    background: var(--snap);
-    color: var(--black);
+    height: 68px;
+    padding: 0 28px;
+    background: var(--ink);
+    color: var(--on-dark);
 }
 
+
 header h1 {
+    font-family: var(--font-head);
     font-size: 26px;
     font-weight: 800;
-    letter-spacing: -0.03em;
-    color: var(--black);
+    letter-spacing: -0.02em;
+    color: var(--white);
 }
+
 
 .account {
     display: flex;
@@ -101,16 +134,18 @@ header h1 {
     gap: 14px;
     min-width: 0;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
 }
+
 
 #username {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--black);
+    color: var(--white);
 }
+
 
 #username::before {
     content: "";
@@ -123,95 +158,119 @@ header h1 {
 }
 
 
+
+
 /* =========================
    LOGOUT
 ========================= */
 
+
 #logout {
     flex: none;
-    padding: 9px 18px;
+    padding: 9px 16px;
+    border: 1px solid var(--ink-line);
     border-radius: 999px;
-    background: var(--black);
-    color: var(--snap);
-    font-weight: 700;
-    transition: transform 0.1s ease;
+    background: transparent;
+    color: var(--on-dark);
+    font-weight: 600;
+    transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-#logout:active {
-    transform: scale(0.95);
+
+#logout:hover {
+    background: var(--ink-soft);
+    border-color: var(--on-dark-muted);
 }
+
+
 
 
 /* =========================
    MAIN
 ========================= */
 
+
 main {
-    width: 100%;
-    max-width: 640px;
-    margin: 24px auto 60px;
-    background: var(--white);
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(11, 20, 26, 0.12);
+    width: 90%;
+    max-width: 720px;
+    margin: 40px auto 60px;
 }
+
+
 
 
 /* =========================
    WELCOME
 ========================= */
 
+
 .welcome {
-    padding: 22px 20px 6px;
+    margin-bottom: 22px;
 }
+
 
 .welcome h2 {
-    margin-bottom: 4px;
-    font-size: 24px;
+    margin-bottom: 6px;
+    font-family: var(--font-head);
+    font-size: 28px;
     font-weight: 800;
     letter-spacing: -0.02em;
+    color: var(--ink);
 }
 
+
 .welcome p {
-    font-size: 14.5px;
+    font-size: 15px;
     color: var(--muted);
 }
+
+
 
 
 /* =========================
    SEARCH
 ========================= */
 
+
 #search {
     display: block;
-    width: calc(100% - 32px);
-    height: 42px;
-    margin: 14px 16px;
-    padding: 0 18px;
-    border: 0;
+    width: 100%;
+    height: 48px;
+    margin-bottom: 18px;
+    padding: 0 20px;
+    border: 2px solid transparent;
     border-radius: 999px;
-    background: var(--page);
+    background: var(--white);
+    box-shadow: 0 1px 2px rgba(24, 27, 58, 0.08);
     outline: none;
     font-size: 15px;
+    transition: border-color 0.15s ease;
 }
+
 
 #search::placeholder {
     color: var(--muted);
 }
 
+
 #search:focus {
-    box-shadow: inset 0 0 0 2px var(--black);
+    border-color: var(--indigo);
 }
 
 
+
+
 /* =========================
-   USERS  (WhatsApp-style rows)
+   USERS
 ========================= */
+
 
 #users {
     display: flex;
     flex-direction: column;
+    gap: 8px;
 }
+
 
 .user {
     position: relative;
@@ -219,42 +278,36 @@ main {
     align-items: center;
     gap: 14px;
     min-height: 72px;
-    padding: 10px 16px;
-    transition: background 0.12s ease;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--white);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+
 
 .user:hover {
-    background: var(--hover);
+    border-color: var(--indigo);
+    box-shadow: 0 4px 14px rgba(75, 79, 224, 0.12);
 }
 
-/* divider that starts after the avatar */
-.user::after {
-    content: "";
-    position: absolute;
-    left: 80px;
-    right: 0;
-    bottom: 0;
-    border-bottom: 1px solid var(--line);
-}
-
-.user:last-child::after {
-    display: none;
-}
 
 .user-avatar {
     flex: none;
     display: grid;
     place-items: center;
-    width: 50px;
-    height: 50px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
-    background: #dfe5e7;
-    color: #54656f;
-    font-size: 18px;
-    font-weight: 700;
+    background: var(--indigo-soft);
+    color: var(--indigo);
+    font-family: var(--font-head);
+    font-size: 17px;
+    font-weight: 800;
     text-transform: uppercase;
     overflow: hidden;
 }
+
 
 .user-avatar img {
     width: 100%;
@@ -262,102 +315,168 @@ main {
     object-fit: cover;
 }
 
+
 .user-name {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 16.5px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
 }
+
+
 
 
 /* =========================
    CHAT BUTTON
 ========================= */
 
+
 .chat-button {
     flex: none;
-    padding: 9px 20px;
+    padding: 10px 20px;
     border-radius: 999px;
-    background: var(--green);
+    background: var(--indigo);
     color: var(--white);
-    font-weight: 700;
+    font-weight: 600;
     transition: background 0.15s ease, transform 0.1s ease;
 }
 
+
 .chat-button:hover {
-    background: var(--green-dark);
+    background: var(--indigo-dark);
 }
 
+
 .chat-button:active {
-    transform: scale(0.95);
+    transform: scale(0.96);
 }
+
+
 
 
 /* =========================
    EMPTY / LOADING
 ========================= */
 
+
 #users > p {
-    padding: 28px 20px 34px;
+    padding: 26px;
+    border: 2px dashed var(--dot);
+    border-radius: 16px;
+    background: var(--white);
     text-align: center;
     color: var(--muted);
 }
 
 
+
+
 /* =========================
-   PHONE  (full screen list, no card)
+   PHONE
+   Full-width list, big tap targets, no side panels.
 ========================= */
 
-@media (max-width: 680px) {
 
-    body {
-        background: var(--white);
-    }
+@media (max-width: 600px) {
+
 
     header {
+        height: 60px;
+        padding: 0 14px;
+        padding-top: env(safe-area-inset-top, 0px);
         height: calc(60px + env(safe-area-inset-top, 0px));
-        padding: env(safe-area-inset-top, 0px) 14px 0;
     }
 
+
     header h1 {
-        font-size: 24px;
+        font-size: 22px;
     }
+
 
     .account {
         gap: 10px;
     }
 
+
     #logout {
-        padding: 8px 14px;
+        padding: 8px 12px;
     }
+
 
     main {
-        margin: 0;
-        max-width: none;
-        border-radius: 0;
-        box-shadow: none;
-        padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+        width: 100%;
+        margin: 0 auto;
+        padding: 22px 0 calc(40px + env(safe-area-inset-bottom, 0px));
     }
+
+
+    .welcome,
+    #search {
+        margin-left: 14px;
+        margin-right: 14px;
+    }
+
 
     .welcome {
-        padding: 18px 16px 4px;
+        width: auto;
     }
+
 
     .welcome h2 {
-        font-size: 22px;
+        font-size: 24px;
     }
 
+
     #search {
+        width: calc(100% - 28px);
         font-size: 16px; /* stops iPhones zooming on focus */
     }
 
+
+    /* Edge-to-edge rows, like a classic chat list */
+    #users {
+        gap: 0;
+        background: var(--white);
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+    }
+
+
+    .user {
+        min-height: 68px;
+        padding: 10px 14px;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        border-radius: 0;
+    }
+
+
+    .user:last-child {
+        border-bottom: 0;
+    }
+
+
+    .user:hover {
+        box-shadow: none;
+        border-color: var(--line);
+        background: var(--paper);
+    }
+
+
     .chat-button {
-        padding: 8px 16px;
+        padding: 9px 16px;
+    }
+
+
+    #users > p {
+        margin: 14px;
     }
 }
+
 
 @media (prefers-reduced-motion: reduce) {
     * {
