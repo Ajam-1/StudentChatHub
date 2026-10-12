@@ -1,13 +1,22 @@
 /* ==========================================================
-   ChatHub - chat.css
+   ChatHub - chat.css  (classic messenger layout)
+
+   Desktop : chat list on the left, conversation on the right
+   Phone   : NO sidebar. The chat list is one full screen,
+             tapping a person opens the conversation full screen,
+             and the back arrow returns to the list.
+
    Palette
-     ink       #181B3A  sidebar
-     ink-soft  #242852  sidebar hover / inputs
-     paper     #F3F4FA  chat background
+     ink       #181B3A  chat list
+     ink-soft  #242852  hover / inputs on dark
+     paper     #F3F4FA  conversation background
      indigo    #4B4FE0  your messages, send button
      marigold  #FFB020  new chat button, active chat marker
      green     #2FBF71  online status
    Type: Bricolage Grotesque (headings) + Figtree (body)
+
+   Needs: chat.html with #chat-app, #back-btn and the SVG icons,
+          and chat-mobile.js loaded after chat.js
    ========================================================== */
 
 @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap");
@@ -19,6 +28,7 @@
     --paper: #f3f4fa;
     --dot: #d3d6ec;
     --white: #ffffff;
+    --line: #e3e5f3;
     --indigo: #4b4fe0;
     --indigo-dark: #3a3ec2;
     --marigold: #ffb020;
@@ -69,11 +79,39 @@ button {
     outline-offset: 2px;
 }
 
+svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* ---------- Icon buttons ---------- */
+
+.icon-btn {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: var(--muted);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.icon-btn:hover {
+    background: var(--paper);
+    color: var(--indigo);
+}
+
 /* ---------- App shell ---------- */
 
 .chat-app {
     display: grid;
-    grid-template-columns: 330px 1fr;
+    grid-template-columns: 340px 1fr;
     height: 100vh;
     height: 100dvh;
     overflow: hidden;
@@ -83,8 +121,8 @@ button {
 
 .avatar {
     flex: none;
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
     display: grid;
     place-items: center;
@@ -103,7 +141,7 @@ button {
     object-fit: cover;
 }
 
-/* ---------- Sidebar ---------- */
+/* ---------- Chat list (sidebar on desktop) ---------- */
 
 .sidebar {
     display: flex;
@@ -117,7 +155,7 @@ button {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 22px 20px 14px;
+    padding: 22px 20px 12px;
 }
 
 .logo {
@@ -133,29 +171,38 @@ button {
 }
 
 .new-chat {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
     background: var(--marigold);
     color: var(--ink);
-    font-size: 24px;
-    font-weight: 600;
-    line-height: 1;
-    transition: transform 0.15s ease;
 }
 
 .new-chat:hover {
-    transform: rotate(90deg);
+    background: var(--marigold);
+    color: var(--ink);
+    filter: brightness(1.08);
 }
 
 .search-box {
-    padding: 4px 20px 16px;
+    position: relative;
+    padding: 4px 20px 14px;
+}
+
+.search-box svg {
+    position: absolute;
+    left: 34px;
+    top: 50%;
+    margin-top: -5px;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: var(--on-dark-muted);
+    pointer-events: none;
 }
 
 .search-box input {
     width: 100%;
-    padding: 12px 16px;
-    border-radius: 12px;
+    height: 44px;
+    padding: 0 16px 0 44px;
+    border-radius: 999px;
     border: 1px solid transparent;
     background: var(--ink-soft);
     color: var(--white);
@@ -170,7 +217,7 @@ button {
     border-color: var(--marigold);
 }
 
-/* ---------- Chat list (items are created by chat.js) ---------- */
+/* Rows are created by chat.js */
 
 .chat-list {
     flex: 1;
@@ -188,10 +235,10 @@ button {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     width: 100%;
-    padding: 10px 12px;
-    border-radius: 12px;
+    padding: 11px 12px;
+    border-radius: 14px;
     text-align: left;
     color: var(--on-dark);
     cursor: pointer;
@@ -233,6 +280,7 @@ button {
 .chat-item .name {
     display: block;
     font-weight: 600;
+    font-size: 16px;
     color: var(--white);
     white-space: nowrap;
     overflow: hidden;
@@ -243,6 +291,7 @@ button {
 .chat-item .chat-preview,
 .chat-item .preview {
     display: block;
+    margin-top: 2px;
     font-size: 13px;
     color: var(--on-dark-muted);
     white-space: nowrap;
@@ -262,8 +311,6 @@ button {
     text-align: center;
 }
 
-/* ---------- Sidebar bottom ---------- */
-
 .sidebar-bottom {
     display: flex;
     align-items: center;
@@ -277,6 +324,10 @@ button {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
+}
+
+.profile-text {
     min-width: 0;
 }
 
@@ -311,7 +362,7 @@ button {
 
 #logout {
     padding: 9px 14px;
-    border-radius: 10px;
+    border-radius: 999px;
     border: 1px solid var(--ink-line);
     color: var(--on-dark);
     font-weight: 500;
@@ -323,7 +374,7 @@ button {
     border-color: var(--on-dark-muted);
 }
 
-/* ---------- Main chat ---------- */
+/* ---------- Conversation ---------- */
 
 .chat {
     display: flex;
@@ -336,26 +387,37 @@ button {
 .chat-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 14px 24px;
+    gap: 8px;
+    padding: 10px 20px;
     background: var(--white);
-    border-bottom: 1px solid #e3e5f3;
+    border-bottom: 1px solid var(--line);
+}
+
+.back-btn {
+    display: none;
 }
 
 .current-user {
+    flex: 1;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
+    min-width: 0;
+}
+
+.current-text {
     min-width: 0;
 }
 
 .current-user h2 {
     margin: 0;
     font-family: var(--font-head);
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 800;
     letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .status {
@@ -375,21 +437,7 @@ button {
 
 .header-actions {
     display: flex;
-    gap: 6px;
-}
-
-.header-actions button {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    font-size: 18px;
-    color: var(--muted);
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-.header-actions button:hover {
-    background: var(--paper);
-    color: var(--indigo);
+    gap: 2px;
 }
 
 /* ---------- Messages: dotted notebook paper ---------- */
@@ -400,8 +448,8 @@ button {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 24px;
+    gap: 6px;
+    padding: 20px 24px;
     background-image: radial-gradient(var(--dot) 1.2px, transparent 1.2px);
     background-size: 22px 22px;
     scrollbar-width: thin;
@@ -409,8 +457,8 @@ button {
 
 .empty-chat {
     margin: auto;
-    padding: 22px 28px;
-    max-width: 320px;
+    padding: 20px 26px;
+    max-width: 300px;
     text-align: center;
     color: var(--muted);
     background: var(--white);
@@ -418,14 +466,15 @@ button {
     border-radius: 16px;
 }
 
-/* Message bubbles (created by chat.js).
+/* Bubbles with a small tail, like a classic messenger.
    Use class "sent" for your messages and "received" for theirs. */
 
 .message {
+    position: relative;
     max-width: min(72%, 540px);
-    padding: 10px 14px;
-    border-radius: 18px;
-    line-height: 1.45;
+    padding: 8px 12px 7px;
+    border-radius: 14px;
+    line-height: 1.4;
     overflow-wrap: anywhere;
 }
 
@@ -433,9 +482,23 @@ button {
 .message.theirs,
 .message.other {
     align-self: flex-start;
+    margin-left: 8px;
     background: var(--white);
-    border-bottom-left-radius: 5px;
-    box-shadow: 0 1px 2px rgba(24, 27, 58, 0.08);
+    border-top-left-radius: 4px;
+    box-shadow: 0 1px 1px rgba(24, 27, 58, 0.1);
+}
+
+.message.received::after,
+.message.theirs::after,
+.message.other::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -8px;
+    width: 10px;
+    height: 12px;
+    background: var(--white);
+    clip-path: polygon(100% 0, 0 0, 100% 100%);
 }
 
 .message.sent,
@@ -443,15 +506,30 @@ button {
 .message.own,
 .message.me {
     align-self: flex-end;
+    margin-right: 8px;
     background: var(--indigo);
     color: var(--white);
-    border-bottom-right-radius: 5px;
+    border-top-right-radius: 4px;
+}
+
+.message.sent::after,
+.message.mine::after,
+.message.own::after,
+.message.me::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -8px;
+    width: 10px;
+    height: 12px;
+    background: var(--indigo);
+    clip-path: polygon(0 0, 100% 0, 0 100%);
 }
 
 .message .time,
 .message small {
     display: block;
-    margin-top: 4px;
+    margin-top: 3px;
     font-size: 11px;
     text-align: right;
     opacity: 0.65;
@@ -462,16 +540,18 @@ button {
 .message-form {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 14px 20px;
+    gap: 6px;
+    padding: 10px 14px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     background: var(--white);
-    border-top: 1px solid #e3e5f3;
+    border-top: 1px solid var(--line);
 }
 
 .message-form input {
     flex: 1;
     min-width: 0;
-    padding: 13px 18px;
+    height: 44px;
+    padding: 0 18px;
     border-radius: 999px;
     border: 2px solid transparent;
     background: var(--paper);
@@ -487,31 +567,15 @@ button {
     background: var(--white);
 }
 
-.attach,
-.emoji {
-    flex: none;
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    font-size: 22px;
-    color: var(--muted);
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-.attach:hover,
-.emoji:hover {
-    background: var(--paper);
-    color: var(--indigo);
-}
-
 .send {
     flex: none;
+    display: grid;
+    place-items: center;
     width: 46px;
     height: 46px;
     border-radius: 50%;
     background: var(--indigo);
     color: var(--white);
-    font-size: 18px;
     transition: background 0.15s ease, transform 0.15s ease;
 }
 
@@ -523,76 +587,87 @@ button {
     transform: scale(0.94);
 }
 
-/* ---------- Tablet and phone ----------
-   The sidebar shrinks to a rail of avatars so the chat keeps room. */
+/* ==========================================================
+   PHONE: no sidebar. One full screen at a time.
+   ========================================================== */
 
-@media (max-width: 900px) {
+@media (max-width: 760px) {
     .chat-app {
-        grid-template-columns: 84px 1fr;
+        display: block;
+        position: relative;
+    }
+
+    /* Screen 1: the chat list fills the phone */
+    .sidebar {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        transition: transform 0.25s ease;
     }
 
     .sidebar-top {
-        flex-direction: column;
-        gap: 14px;
-        padding: 18px 0 12px;
-    }
-
-    .logo {
-        font-size: 0;
-    }
-
-    .logo span {
-        font-size: 24px;
-    }
-
-    .search-box,
-    .chat-item .chat-info,
-    .chat-item .info,
-    .chat-item small,
-    .chat-item .unread,
-    .chat-item .badge,
-    .profile > div:last-child,
-    #logout {
-        display: none;
-    }
-
-    .chat-item,
-    .chat-list > div,
-    .chat-list > li,
-    .chat-list > button {
-        justify-content: center;
-        padding: 10px 0;
+        padding-top: calc(20px + env(safe-area-inset-top, 0px));
     }
 
     .sidebar-bottom {
-        justify-content: center;
-        padding: 14px 0;
+        padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Screen 2: the conversation */
+    .chat {
+        position: absolute;
+        inset: 0;
+    }
+
+    /* Opening a chat slides the list away */
+    .chat-app.chat-open .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .back-btn {
+        display: grid;
+        margin-left: -6px;
     }
 
     .chat-header {
-        padding: 12px 16px;
+        padding: 8px 10px;
+        padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    }
+
+    .avatar {
+        width: 42px;
+        height: 42px;
     }
 
     .messages {
-        padding: 16px;
+        padding: 14px 12px;
     }
 
     .message {
-        max-width: 85%;
+        max-width: 82%;
     }
-}
 
-@media (max-width: 480px) {
-    .header-actions button:not(:last-child) {
-        display: none;
+    /* 16px stops iPhones from zooming when an input is focused */
+    .message-form input,
+    .search-box input {
+        font-size: 16px;
     }
 
     .message-form {
-        padding: 10px 12px;
-        gap: 6px;
+        padding: 8px 10px;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
     }
 
+    .attach,
     .emoji {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+/* Very small phones: keep the call buttons out of the way */
+@media (max-width: 380px) {
+    .header-actions .icon-btn:not(:last-child) {
         display: none;
     }
 }
@@ -600,5 +675,6 @@ button {
 @media (prefers-reduced-motion: reduce) {
     * {
         transition: none !important;
+        scroll-behavior: auto !important;
     }
 }
