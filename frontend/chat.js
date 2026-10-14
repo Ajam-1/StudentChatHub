@@ -8,6 +8,7 @@ const messagesContainer = document.getElementById("messages");
 const messageForm = document.getElementById("message-form");
 const messageInput = document.getElementById("message-input");
 const currentName = document.getElementById("current-name");
+const attachButton = document.getElementById("attach");
 
 
 /* =========================
@@ -18,6 +19,13 @@ let currentUser = null;
 let chatWith = null;
 let isLoadingMessages = false;
 let lastReceivedCount = -1;
+let isSending = false;
+
+// Files chosen with the + button, waiting to be sent
+let attachedFiles = [];
+
+const MAX_FILES = 5;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB each
 
 
 /* =========================
@@ -120,6 +128,37 @@ function scrollMessagesToBottom() {
     if (messagesContainer) {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) {
+        return `${bytes} B`;
+    }
+
+    if (bytes < 1024 * 1024) {
+        return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Turns a server file path into a full, safe URL (only http/https allowed)
+function safeFileUrl(url) {
+    if (!url) {
+        return "";
+    }
+
+    try {
+        const full = new URL(String(url), API_URL);
+
+        if (full.protocol === "http:" || full.protocol === "https:") {
+            return full.href;
+        }
+    } catch (error) {
+        console.error("Bad file URL:", url);
+    }
+
+    return "";
 }
 
 
@@ -259,6 +298,97 @@ function setupNotificationButton() {
 
 
 /* =========================
+   ATTACHMENTS (+ BUTTON)
+========================= */
+
+// Hidden file picker, created here so chat.html does not need to change
+const fileInput = document.createElement("input");
+fileInput.type = "file";
+fileInput.id = "fileInput";
+fileInput.multiple = true;
+fileInput.accept = "image/*,.pdf,.doc,.docx,.txt";
+fileInput.hidden = true;
+
+// Preview strip that shows chosen files above the message box
+const attachPreview = document.createElement("div");
+attachPreview.id = "attachPreview";
+attachPreview.className = "attach-preview";
+
+if (messageForm) {
+    messageForm.parentNode.insertBefore(attachPreview, messageForm);
+    messageForm.appendChild(fileInput);
+}
+
+function renderAttachPreview() {
+    attachPreview.innerHTML = "";
+
+    attachedFiles.forEach((file, index) => {
+        const chip = document.createElement("div");
+        chip.className = "attach-chip";
+
+        if (file.type.startsWith("image/")) {
+            const image = document.createElement("img");
+            const previewUrl = URL.createObjectURL(file);
+
+            image.src = previewUrl;
+            image.alt = file.name;
+            image.onload = () => URL.revokeObjectURL(previewUrl);
+
+            chip.appendChild(image);
+        }
+
+        const name = document.createElement("span");
+        name.textContent = `${file.name} (${formatFileSize(file.size)})`;
+        chip.appendChild(name);
+
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.textContent = "✕";
+        removeButton.title = "Remove";
+        removeButton.addEventListener("click", () => {
+            attachedFiles.splice(index, 1);
+            renderAttachPreview();
+        });
+        chip.appendChild(removeButton);
+
+        attachPreview.appendChild(chip);
+    });
+}
+
+function clearAttachments() {
+    attachedFiles = [];
+    renderAttachPreview();
+}
+
+if (attachButton) {
+    // The + button opens the file picker
+    attachButton.addEventListener("click", () => {
+        fileInput.click();
+    });
+}
+
+fileInput.addEventListener("change", () => {
+    for (const file of fileInput.files) {
+        if (attachedFiles.length >= MAX_FILES) {
+            alert(`You can attach up to ${MAX_FILES} files at once.`);
+            break;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            alert(`${file.name} is too large (max ${formatFileSize(MAX_FILE_SIZE)}).`);
+            continue;
+        }
+
+        attachedFiles.push(file);
+    }
+
+    // Lets the user pick the same file again later
+    fileInput.value = "";
+    renderAttachPreview();
+});
+
+
+/* =========================
    MARK MESSAGES AS READ
 ========================= */
 
@@ -368,6 +498,47 @@ async function loadMessages() {
    RENDER MESSAGES
 ========================= */
 
+// Builds the picture or download link for one attachment
+function createAttachmentElement(attachment) {
+    const url = safeFileUrl(attachment.url ?? attachment.path ?? attachment.fileUrl);
+
+    if (!url) {
+        return null;
+    }
+
+    const name = String(attachment.name ?? attachment.originalName ?? attachment.filename ?? "file");
+    const type = String(attachment.type ?? attachment.mimetype ?? attachment.mimeType ?? "");
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "message-attachment";
+
+    if (type.startsWith("image/")) {
+        const link = document.createElement("a");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        const image = document.createElement("img");
+        image.src = url;
+        image.alt = name;
+        image.loading = "lazy";
+
+        link.appendChild(image);
+        wrapper.appendChild(link);
+        return wrapper;
+    }
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.className = "file-link";
+    link.textContent = `📎 ${name}`;
+
+    wrapper.appendChild(link);
+    return wrapper;
+}
+
 function renderMessages(messages) {
     if (!messagesContainer) {
         return;
@@ -396,6 +567,7 @@ function renderMessages(messages) {
     messages.forEach(message => {
         const senderId = toId(message.senderId ?? message.sender ?? message.from);
         const text = message.text ?? message.message ?? "";
+        const attachments = Array.isArray(message.attachments) ? message.attachments : [];
 
         const messageElement = document.createElement("div");
 
@@ -406,8 +578,24 @@ function renderMessages(messages) {
         const bubble = document.createElement("div");
         bubble.className = "message-bubble";
 
-        // textContent prevents users from injecting HTML into the chat
-        bubble.textContent = String(text);
+        // Attachments first, then the text under them
+        attachments.forEach(attachment => {
+            const element = createAttachmentElement(attachment);
+
+            if (element) {
+                bubble.appendChild(element);
+            }
+        });
+
+        if (text) {
+            const textElement = document.createElement("div");
+            textElement.className = "message-text";
+
+            // textContent prevents users from injecting HTML into the chat
+            textElement.textContent = String(text);
+
+            bubble.appendChild(textElement);
+        }
 
         messageElement.appendChild(bubble);
         messagesContainer.appendChild(messageElement);
@@ -426,6 +614,11 @@ function renderMessages(messages) {
 async function sendMessage(event) {
     event.preventDefault();
 
+    // Stops double sends while a message (or upload) is in progress
+    if (isSending) {
+        return;
+    }
+
     if (!currentUser) {
         alert("Please sign in again.");
         return;
@@ -438,7 +631,8 @@ async function sendMessage(event) {
 
     const text = messageInput.value.trim();
 
-    if (!text) {
+    // A message needs text, files, or both
+    if (!text && attachedFiles.length === 0) {
         return;
     }
 
@@ -461,14 +655,41 @@ async function sendMessage(event) {
     }
 
     try {
+        isSending = true;
         messageInput.disabled = true;
 
+        if (attachButton) {
+            attachButton.disabled = true;
+        }
+
+        let options;
+
+        if (attachedFiles.length > 0) {
+            // With files: send as FormData (the browser sets the Content-Type itself)
+            const formData = new FormData();
+            formData.append("receiverId", receiverId);
+            formData.append("text", text);
+
+            attachedFiles.forEach(file => {
+                formData.append("files", file);
+            });
+
+            options = {
+                method: "POST",
+                headers: authHeaders(),
+                body: formData
+            };
+        } else {
+            // Text only: same JSON request as before
+            options = {
+                method: "POST",
+                headers: authHeaders(true),
+                body: JSON.stringify({ receiverId, text })
+            };
+        }
+
         // The backend uses the token to know who the sender is
-        const response = await fetch(`${API_URL}/messages`, {
-            method: "POST",
-            headers: authHeaders(true),
-            body: JSON.stringify({ receiverId, text })
-        });
+        const response = await fetch(`${API_URL}/messages`, options);
 
         if (response.status === 401 || response.status === 403) {
             handleAuthError();
@@ -492,14 +713,22 @@ async function sendMessage(event) {
         }
 
         messageInput.value = "";
+        clearAttachments();
 
         await loadMessages();
+        scrollMessagesToBottom();
 
     } catch (error) {
         console.error("Error sending message:", error);
         alert(error.message || "Could not send message.");
     } finally {
+        isSending = false;
         messageInput.disabled = false;
+
+        if (attachButton) {
+            attachButton.disabled = false;
+        }
+
         messageInput.focus();
     }
 }
