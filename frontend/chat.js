@@ -1416,3 +1416,34 @@ setInterval(() => {
         loadGroups();
     }
 }, 15000);
+/* Add people window: tabs and group form */
+.people-tabs { display: flex; gap: 6px; padding: 4px; background: var(--paper); border-radius: 12px; }
+.people-tab { flex: 1; padding: 9px; border-radius: 9px; font-weight: 600; color: var(--muted); }
+.people-tab.active { background: var(--white); color: var(--indigo); box-shadow: 0 1px 2px rgba(24, 27, 58, 0.12); }
+
+.group-name {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    background: var(--paper);
+}
+.group-name:focus { outline: none; border-color: var(--indigo); background: var(--white); }
+.group-name[hidden] { display: none; }
+
+.people-row.selected { background: #e9eafc; }
+.people-row.selected .people-tag { color: var(--green); }
+
+.group-create {
+    padding: 13px;
+    border-radius: 12px;
+    background: var(--indigo);
+    color: var(--white);
+    font-weight: 600;
+}
+.group-create:hover { background: var(--indigo-dark); }
+.group-create:disabled { opacity: 0.6; cursor: default; }
+.group-create[hidden] { display: none; }
+
+/* Sender name inside group messages */
+.message-sender { margin-bottom: 2px; font-size: 12px; font-weight: 600; color: var(--indigo); }
