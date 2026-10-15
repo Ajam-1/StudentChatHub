@@ -8,7 +8,25 @@ const messagesContainer = document.getElementById("messages");
 const messageForm = document.getElementById("message-form");
 const messageInput = document.getElementById("message-input");
 const currentName = document.getElementById("current-name");
-const attachButton = document.getElementById("attach");
+const newChatButton = document.querySelector(".new-chat");
+const chatList = document.querySelector(".chat-list");
+const sidebarSearch = document.querySelector(".search-box input");
+
+// The + button next to the message box.
+// If chat.html does not contain it, it is created here so it always shows.
+let attachButton = document.getElementById("attach");
+
+if (!attachButton && messageForm && messageInput) {
+    attachButton = document.createElement("button");
+    attachButton.type = "button";
+    attachButton.id = "attach";
+    attachButton.className = "attach";
+    attachButton.title = "Attach";
+    attachButton.setAttribute("aria-label", "Attach a file");
+    attachButton.textContent = "+";
+
+    messageInput.parentNode.insertBefore(attachButton, messageInput);
+}
 
 
 /* =========================
@@ -185,6 +203,13 @@ function checkLogin() {
 function showChatPartner() {
     if (currentName && chatWith) {
         currentName.textContent = chatWith.username;
+    }
+
+    // Show the first letter in the header avatar (unless it holds a picture)
+    const headerAvatar = document.querySelector(".chat-header .avatar");
+
+    if (headerAvatar && chatWith && !headerAvatar.querySelector("img")) {
+        headerAvatar.textContent = chatWith.username.charAt(0);
     }
 }
 
@@ -461,6 +486,11 @@ async function loadMessages() {
 
         if (!Array.isArray(messages)) {
             throw new Error("Server returned an invalid messages list.");
+        }
+
+        // The user switched to another chat while this request was running
+        if (!chatWith || toId(chatWith.id) !== otherUserId) {
+            return;
         }
 
         renderMessages(messages);
@@ -757,6 +787,366 @@ if (messageForm) {
 
 
 /* =========================
+   SIDEBAR: CHAT LIST + ADD PEOPLE
+========================= */
+
+// Change this if your backend lists users on a different route.
+// It should return an array of users, or { users: [...] }.
+// It can optionally support ?search=name
+const USERS_ENDPOINT = `${API_URL}/users`;
+
+function normalizeUser(raw) {
+    if (!raw) {
+        return null;
+    }
+
+    const id = toId(raw.id ?? raw._id ?? raw.userId);
+
+    if (!id) {
+        return null;
+    }
+
+    return {
+        id,
+        username: raw.username || raw.name || "Unknown User"
+    };
+}
+
+// People you have added are saved per account on this device
+function contactsKey() {
+    return `chathubContacts:${getCurrentUserId()}`;
+}
+
+function loadContacts() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(contactsKey()));
+
+        if (!Array.isArray(saved)) {
+            return [];
+        }
+
+        return saved.map(normalizeUser).filter(Boolean);
+    } catch (error) {
+        console.error("Could not read contacts:", error);
+        return [];
+    }
+}
+
+function saveContacts(list) {
+    try {
+        localStorage.setItem(contactsKey(), JSON.stringify(list));
+    } catch (error) {
+        console.error("Could not save contacts:", error);
+    }
+}
+
+function addContact(user) {
+    const person = normalizeUser(user);
+
+    if (!person || person.id === getCurrentUserId()) {
+        return;
+    }
+
+    const contacts = loadContacts();
+
+    if (contacts.some(contact => contact.id === person.id)) {
+        return;
+    }
+
+    contacts.unshift(person);
+    saveContacts(contacts);
+}
+
+function renderContactList() {
+    if (!chatList) {
+        return;
+    }
+
+    const term = sidebarSearch ? sidebarSearch.value.trim().toLowerCase() : "";
+    const contacts = loadContacts().filter(contact =>
+        contact.username.toLowerCase().includes(term)
+    );
+
+    chatList.innerHTML = "";
+
+    if (contacts.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "chat-empty";
+        empty.textContent = term
+            ? "No one found."
+            : "No chats yet. Tap + to add someone.";
+
+        chatList.appendChild(empty);
+        return;
+    }
+
+    const activeId = chatWith ? toId(chatWith.id) : "";
+
+    contacts.forEach(contact => {
+        const item = document.createElement("div");
+        item.className = contact.id === activeId ? "chat-item active" : "chat-item";
+        item.tabIndex = 0;
+        item.setAttribute("role", "button");
+        item.title = contact.username;
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = contact.username.charAt(0);
+
+        const info = document.createElement("div");
+        info.className = "chat-info";
+
+        const name = document.createElement("strong");
+        name.textContent = contact.username;
+
+        info.appendChild(name);
+        item.appendChild(avatar);
+        item.appendChild(info);
+
+        item.addEventListener("click", () => openChat(contact));
+
+        item.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openChat(contact);
+            }
+        });
+
+        chatList.appendChild(item);
+    });
+}
+
+// Switches the message pane to another person without reloading the page
+function openChat(person) {
+    const partner = normalizeUser(person);
+
+    if (!partner || partner.id === getCurrentUserId()) {
+        return;
+    }
+
+    if (chatWith && toId(chatWith.id) === partner.id) {
+        return;
+    }
+
+    chatWith = partner;
+    localStorage.setItem("chatWith", JSON.stringify(partner));
+
+    lastReceivedCount = -1;
+    isLoadingMessages = false;
+
+    if (messagesContainer) {
+        messagesContainer.innerHTML = "";
+    }
+
+    clearAttachments();
+    showChatPartner();
+    renderContactList();
+    loadMessages();
+
+    if (messageInput) {
+        messageInput.focus();
+    }
+}
+
+
+/* ---------- Add people window ---------- */
+
+let peopleModal = null;
+let peopleSearchInput = null;
+let peopleResults = null;
+let peopleSearchRun = 0;
+let peopleSearchTimer = null;
+
+async function fetchUsers(term) {
+    const url = term
+        ? `${USERS_ENDPOINT}?search=${encodeURIComponent(term)}`
+        : USERS_ENDPOINT;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: authHeaders()
+    });
+
+    if (response.status === 401 || response.status === 403) {
+        handleAuthError();
+        return [];
+    }
+
+    if (!response.ok) {
+        throw new Error(`Users request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const list = Array.isArray(data) ? data : (data.users || []);
+    const myId = getCurrentUserId();
+    const lower = term.toLowerCase();
+
+    // Filter again here in case the server ignores ?search=
+    return list
+        .map(normalizeUser)
+        .filter(user =>
+            user &&
+            user.id !== myId &&
+            user.username.toLowerCase().includes(lower)
+        );
+}
+
+function setPeopleMessage(text) {
+    peopleResults.innerHTML = "";
+
+    const message = document.createElement("div");
+    message.className = "people-message";
+    message.textContent = text;
+
+    peopleResults.appendChild(message);
+}
+
+function renderPeopleResults(people) {
+    peopleResults.innerHTML = "";
+
+    if (people.length === 0) {
+        setPeopleMessage("No one found.");
+        return;
+    }
+
+    const existingIds = loadContacts().map(contact => contact.id);
+
+    people.forEach(person => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "people-row";
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = person.username.charAt(0);
+
+        const name = document.createElement("span");
+        name.className = "people-name";
+        name.textContent = person.username;
+
+        const tag = document.createElement("span");
+        tag.className = "people-tag";
+        tag.textContent = existingIds.includes(person.id) ? "In your chats" : "Add";
+
+        row.appendChild(avatar);
+        row.appendChild(name);
+        row.appendChild(tag);
+
+        row.addEventListener("click", () => {
+            addContact(person);
+
+            // Clear the sidebar search so the new person is visible
+            if (sidebarSearch) {
+                sidebarSearch.value = "";
+            }
+
+            closeAddPeople();
+            openChat(person);
+            renderContactList();
+        });
+
+        peopleResults.appendChild(row);
+    });
+}
+
+async function runPeopleSearch(term) {
+    const thisRun = ++peopleSearchRun;
+
+    setPeopleMessage("Searching...");
+
+    try {
+        const people = await fetchUsers(term);
+
+        // A newer search has started, so ignore this one
+        if (thisRun !== peopleSearchRun) {
+            return;
+        }
+
+        renderPeopleResults(people);
+    } catch (error) {
+        console.error("Could not load people:", error);
+
+        if (thisRun === peopleSearchRun) {
+            setPeopleMessage("Could not load people. Please try again.");
+        }
+    }
+}
+
+function buildAddPeopleModal() {
+    peopleModal = document.createElement("div");
+    peopleModal.className = "people-modal";
+    peopleModal.hidden = true;
+
+    peopleModal.innerHTML = `
+        <div class="people-dialog" role="dialog" aria-modal="true" aria-label="Add people">
+            <div class="people-header">
+                <h3>Add people</h3>
+                <button type="button" class="people-close" aria-label="Close">✕</button>
+            </div>
+            <input type="search" class="people-search" placeholder="Search by name" autocomplete="off">
+            <div class="people-results"></div>
+        </div>
+    `;
+
+    peopleSearchInput = peopleModal.querySelector(".people-search");
+    peopleResults = peopleModal.querySelector(".people-results");
+
+    peopleModal.querySelector(".people-close").addEventListener("click", closeAddPeople);
+
+    // Clicking the dark area outside the window closes it
+    peopleModal.addEventListener("click", event => {
+        if (event.target === peopleModal) {
+            closeAddPeople();
+        }
+    });
+
+    peopleSearchInput.addEventListener("input", () => {
+        clearTimeout(peopleSearchTimer);
+
+        peopleSearchTimer = setTimeout(() => {
+            runPeopleSearch(peopleSearchInput.value.trim());
+        }, 300);
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && !peopleModal.hidden) {
+            closeAddPeople();
+        }
+    });
+
+    document.body.appendChild(peopleModal);
+}
+
+function openAddPeople() {
+    if (!peopleModal) {
+        buildAddPeopleModal();
+    }
+
+    peopleModal.hidden = false;
+    peopleSearchInput.value = "";
+    peopleSearchInput.focus();
+
+    runPeopleSearch("");
+}
+
+function closeAddPeople() {
+    if (peopleModal) {
+        peopleModal.hidden = true;
+    }
+}
+
+// The + in the sidebar opens the Add people window
+if (newChatButton) {
+    newChatButton.addEventListener("click", openAddPeople);
+}
+
+// The sidebar search box filters the people already in your list
+if (sidebarSearch) {
+    sidebarSearch.addEventListener("input", renderContactList);
+}
+
+
+/* =========================
    INITIALIZE CHAT
 ========================= */
 
@@ -780,6 +1170,8 @@ async function initializeChat() {
         return;
     }
 
+    addContact(chatWith);
+    renderContactList();
     showChatPartner();
     setupNotificationButton();
 
