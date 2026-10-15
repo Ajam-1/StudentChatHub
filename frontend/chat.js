@@ -39,6 +39,9 @@ let isLoadingMessages = false;
 let lastReceivedCount = -1;
 let isSending = false;
 
+// Groups you belong to (loaded from the server)
+let groups = [];
+
 // Files chosen with the + button, waiting to be sent
 let attachedFiles = [];
 
@@ -125,7 +128,8 @@ function getChatPartner() {
 
         return {
             id: userId,
-            username: user.username || user.name || "Unknown User"
+            username: user.username || user.name || "Unknown User",
+            isGroup: user.isGroup === true
         };
     } catch (error) {
         console.error("Could not read chatWith:", error);
@@ -209,7 +213,7 @@ function showChatPartner() {
     const headerAvatar = document.querySelector(".chat-header .avatar");
 
     if (headerAvatar && chatWith && !headerAvatar.querySelector("img")) {
-        headerAvatar.textContent = chatWith.username.charAt(0);
+        headerAvatar.textContent = chatWith.isGroup ? "👥" : chatWith.username.charAt(0);
     }
 }
 
@@ -457,7 +461,7 @@ async function loadMessages() {
         return;
     }
 
-    if (myId === otherUserId) {
+    if (!chatWith.isGroup && myId === otherUserId) {
         console.error("Current user and chat partner have the same ID.");
         return;
     }
@@ -465,13 +469,15 @@ async function loadMessages() {
     isLoadingMessages = true;
 
     try {
-        const response = await fetch(
-            `${API_URL}/messages/${encodeURIComponent(myId)}/${encodeURIComponent(otherUserId)}`,
-            {
-                method: "GET",
-                headers: authHeaders()
-            }
-        );
+        // Groups and one-to-one chats load from different routes
+        const messagesUrl = chatWith.isGroup
+            ? `${API_URL}/groups/${encodeURIComponent(otherUserId)}/messages`
+            : `${API_URL}/messages/${encodeURIComponent(myId)}/${encodeURIComponent(otherUserId)}`;
+
+        const response = await fetch(messagesUrl, {
+            method: "GET",
+            headers: authHeaders()
+        });
 
         if (response.status === 401 || response.status === 403) {
             handleAuthError();
@@ -501,7 +507,7 @@ async function loadMessages() {
             return senderId !== myId;
         }).length;
 
-        if (!document.hidden && received !== lastReceivedCount) {
+        if (!chatWith.isGroup && !document.hidden && received !== lastReceivedCount) {
             lastReceivedCount = received;
             markAsRead();
         }
@@ -608,6 +614,14 @@ function renderMessages(messages) {
         const bubble = document.createElement("div");
         bubble.className = "message-bubble";
 
+        // In group chats, show who sent each message from other people
+        if (chatWith && chatWith.isGroup && senderId !== myId) {
+            const senderName = document.createElement("div");
+            senderName.className = "message-sender";
+            senderName.textContent = String(message.senderName ?? message.username ?? "Unknown");
+            bubble.appendChild(senderName);
+        }
+
         // Attachments first, then the text under them
         attachments.forEach(attachment => {
             const element = createAttachmentElement(attachment);
@@ -679,8 +693,13 @@ async function sendMessage(event) {
         return;
     }
 
-    if (senderId === receiverId) {
+    if (!chatWith.isGroup && senderId === receiverId) {
         alert("You cannot send a message to yourself.");
+        return;
+    }
+
+    if (chatWith.isGroup && attachedFiles.length > 0) {
+        alert("Sending files in groups is not available yet. Remove the files and try again.");
         return;
     }
 
@@ -693,8 +712,18 @@ async function sendMessage(event) {
         }
 
         let options;
+        let sendUrl = `${API_URL}/messages`;
 
-        if (attachedFiles.length > 0) {
+        if (chatWith.isGroup) {
+            // Group message: the group id goes in the URL
+            sendUrl = `${API_URL}/groups/${encodeURIComponent(receiverId)}/messages`;
+
+            options = {
+                method: "POST",
+                headers: authHeaders(true),
+                body: JSON.stringify({ text })
+            };
+        } else if (attachedFiles.length > 0) {
             // With files: send as FormData (the browser sets the Content-Type itself)
             const formData = new FormData();
             formData.append("receiverId", receiverId);
@@ -719,7 +748,7 @@ async function sendMessage(event) {
         }
 
         // The backend uses the token to know who the sender is
-        const response = await fetch(`${API_URL}/messages`, options);
+        const response = await fetch(sendUrl, options);
 
         if (response.status === 401 || response.status === 403) {
             handleAuthError();
@@ -808,7 +837,8 @@ function normalizeUser(raw) {
 
     return {
         id,
-        username: raw.username || raw.name || "Unknown User"
+        username: raw.username || raw.name || "Unknown User",
+        isGroup: raw.isGroup === true || Array.isArray(raw.members)
     };
 }
 
@@ -825,7 +855,7 @@ function loadContacts() {
             return [];
         }
 
-        return saved.map(normalizeUser).filter(Boolean);
+        return saved.map(normalizeUser).filter(contact => contact && !contact.isGroup);
     } catch (error) {
         console.error("Could not read contacts:", error);
         return [];
@@ -843,7 +873,7 @@ function saveContacts(list) {
 function addContact(user) {
     const person = normalizeUser(user);
 
-    if (!person || person.id === getCurrentUserId()) {
+    if (!person || person.isGroup || person.id === getCurrentUserId()) {
         return;
     }
 
@@ -863,7 +893,7 @@ function renderContactList() {
     }
 
     const term = sidebarSearch ? sidebarSearch.value.trim().toLowerCase() : "";
-    const contacts = loadContacts().filter(contact =>
+    const contacts = [...groups, ...loadContacts()].filter(contact =>
         contact.username.toLowerCase().includes(term)
     );
 
@@ -891,7 +921,7 @@ function renderContactList() {
 
         const avatar = document.createElement("div");
         avatar.className = "avatar";
-        avatar.textContent = contact.username.charAt(0);
+        avatar.textContent = contact.isGroup ? "👥" : contact.username.charAt(0);
 
         const info = document.createElement("div");
         info.className = "chat-info";
@@ -949,6 +979,47 @@ function openChat(person) {
 }
 
 
+/* ---------- Groups ---------- */
+
+async function loadGroups() {
+    if (!currentUser) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/groups`, {
+            method: "GET",
+            headers: authHeaders()
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            handleAuthError();
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(`Groups request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const list = Array.isArray(data) ? data : (data.groups || []);
+
+        const nextGroups = list
+            .map(normalizeUser)
+            .filter(Boolean)
+            .map(group => ({ ...group, isGroup: true }));
+
+        // Only redraw the sidebar when something changed
+        if (JSON.stringify(nextGroups) !== JSON.stringify(groups)) {
+            groups = nextGroups;
+            renderContactList();
+        }
+    } catch (error) {
+        console.error("Could not load groups:", error);
+    }
+}
+
+
 /* ---------- Add people window ---------- */
 
 let peopleModal = null;
@@ -956,6 +1027,12 @@ let peopleSearchInput = null;
 let peopleResults = null;
 let peopleSearchRun = 0;
 let peopleSearchTimer = null;
+
+// "chat" = pick one person to chat with, "group" = pick people for a new group
+let peopleMode = "chat";
+let selectedMembers = new Map();
+let groupNameInput = null;
+let groupCreateButton = null;
 
 async function fetchUsers(term) {
     const url = term
@@ -1001,6 +1078,17 @@ function setPeopleMessage(text) {
     peopleResults.appendChild(message);
 }
 
+function updateGroupCreateButton() {
+    if (!groupCreateButton) {
+        return;
+    }
+
+    const count = selectedMembers.size;
+
+    groupCreateButton.textContent =
+        count > 0 ? `Create group (${count})` : "Create group";
+}
+
 function renderPeopleResults(people) {
     peopleResults.innerHTML = "";
 
@@ -1026,13 +1114,41 @@ function renderPeopleResults(people) {
 
         const tag = document.createElement("span");
         tag.className = "people-tag";
-        tag.textContent = existingIds.includes(person.id) ? "In your chats" : "Add";
+
+        function refreshTag() {
+            if (peopleMode === "group") {
+                const selected = selectedMembers.has(person.id);
+
+                row.classList.toggle("selected", selected);
+                tag.textContent = selected ? "✓ Added" : "Select";
+            } else {
+                tag.textContent = existingIds.includes(person.id)
+                    ? "In your chats"
+                    : "Add";
+            }
+        }
+
+        refreshTag();
 
         row.appendChild(avatar);
         row.appendChild(name);
         row.appendChild(tag);
 
         row.addEventListener("click", () => {
+            // Group mode: tap to select or unselect people
+            if (peopleMode === "group") {
+                if (selectedMembers.has(person.id)) {
+                    selectedMembers.delete(person.id);
+                } else {
+                    selectedMembers.set(person.id, person);
+                }
+
+                refreshTag();
+                updateGroupCreateButton();
+                return;
+            }
+
+            // Chat mode: add the person and open the chat
             addContact(person);
 
             // Clear the sidebar search so the new person is visible
@@ -1072,6 +1188,94 @@ async function runPeopleSearch(term) {
     }
 }
 
+async function createGroup() {
+    const name = groupNameInput.value.trim();
+
+    if (!name) {
+        alert("Give your group a name.");
+        groupNameInput.focus();
+        return;
+    }
+
+    if (selectedMembers.size < 2) {
+        alert("Pick at least 2 people for a group.");
+        return;
+    }
+
+    groupCreateButton.disabled = true;
+
+    try {
+        const response = await fetch(`${API_URL}/groups`, {
+            method: "POST",
+            headers: authHeaders(true),
+            body: JSON.stringify({
+                name,
+                memberIds: [...selectedMembers.keys()]
+            })
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            handleAuthError();
+            return;
+        }
+
+        if (!response.ok) {
+            let errorMessage = "Could not create the group.";
+
+            try {
+                const errorData = await response.json();
+
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                }
+            } catch (error) {
+                console.error("Could not read error response:", error);
+            }
+
+            throw new Error(errorMessage);
+        }
+
+        const created = normalizeUser(await response.json());
+
+        if (!created) {
+            throw new Error("The server sent back an invalid group.");
+        }
+
+        const group = { ...created, isGroup: true };
+
+        groups = [group, ...groups.filter(item => item.id !== group.id)];
+
+        closeAddPeople();
+        openChat(group);
+        renderContactList();
+    } catch (error) {
+        console.error("Error creating group:", error);
+        alert(error.message || "Could not create the group.");
+    } finally {
+        groupCreateButton.disabled = false;
+    }
+}
+
+function setPeopleMode(mode) {
+    peopleMode = mode;
+    selectedMembers = new Map();
+
+    peopleModal.querySelectorAll(".people-tab").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.mode === mode);
+    });
+
+    peopleModal.querySelector(".people-header h3").textContent =
+        mode === "group" ? "New group" : "Add people";
+
+    groupNameInput.hidden = mode !== "group";
+    groupCreateButton.hidden = mode !== "group";
+    groupNameInput.value = "";
+    peopleSearchInput.value = "";
+
+    updateGroupCreateButton();
+    runPeopleSearch("");
+}
+
 function buildAddPeopleModal() {
     peopleModal = document.createElement("div");
     peopleModal.className = "people-modal";
@@ -1083,15 +1287,29 @@ function buildAddPeopleModal() {
                 <h3>Add people</h3>
                 <button type="button" class="people-close" aria-label="Close">✕</button>
             </div>
+            <div class="people-tabs">
+                <button type="button" class="people-tab active" data-mode="chat">Chat</button>
+                <button type="button" class="people-tab" data-mode="group">New group</button>
+            </div>
+            <input type="text" class="group-name" placeholder="Group name" maxlength="40" autocomplete="off" hidden>
             <input type="search" class="people-search" placeholder="Search by name" autocomplete="off">
             <div class="people-results"></div>
+            <button type="button" class="group-create" hidden>Create group</button>
         </div>
     `;
 
     peopleSearchInput = peopleModal.querySelector(".people-search");
     peopleResults = peopleModal.querySelector(".people-results");
+    groupNameInput = peopleModal.querySelector(".group-name");
+    groupCreateButton = peopleModal.querySelector(".group-create");
 
     peopleModal.querySelector(".people-close").addEventListener("click", closeAddPeople);
+
+    peopleModal.querySelectorAll(".people-tab").forEach(tab => {
+        tab.addEventListener("click", () => setPeopleMode(tab.dataset.mode));
+    });
+
+    groupCreateButton.addEventListener("click", createGroup);
 
     // Clicking the dark area outside the window closes it
     peopleModal.addEventListener("click", event => {
@@ -1123,10 +1341,10 @@ function openAddPeople() {
     }
 
     peopleModal.hidden = false;
-    peopleSearchInput.value = "";
-    peopleSearchInput.focus();
 
-    runPeopleSearch("");
+    // Always start on the "Chat" tab (this also loads the people list)
+    setPeopleMode("chat");
+    peopleSearchInput.focus();
 }
 
 function closeAddPeople() {
@@ -1172,6 +1390,7 @@ async function initializeChat() {
 
     addContact(chatWith);
     renderContactList();
+    loadGroups();
     showChatPartner();
     setupNotificationButton();
 
@@ -1190,3 +1409,10 @@ setInterval(() => {
         loadMessages();
     }
 }, 3000);
+
+// Pick up new groups you were added to
+setInterval(() => {
+    if (currentUser && !document.hidden) {
+        loadGroups();
+    }
+}, 15000);
