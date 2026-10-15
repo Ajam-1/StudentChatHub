@@ -602,3 +602,9 @@ button {
         transition: none !important;
     }
 }
+.attach-preview { display: flex; gap: 8px; flex-wrap: wrap; padding: 6px 0; }
+.attach-chip { display: flex; align-items: center; gap: 6px; background: #2a2a3a; color: #fff; padding: 6px 10px; border-radius: 10px; font-size: 13px; }
+.attach-chip img { width: 32px; height: 32px; object-fit: cover; border-radius: 6px; }
+.attach-chip button { background: none; border: 0; color: #fff; cursor: pointer; }
+.message-attachment img { max-width: 220px; max-height: 220px; border-radius: 8px; display: block; margin-bottom: 4px; }
+.message-attachment .file-link { color: inherit; text-decoration: underline; }
