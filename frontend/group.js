@@ -9,6 +9,9 @@
 //   GET  /groups                 groups you belong to
 //   GET  /groups/:id/messages    latest 200 messages of a group
 //   POST /groups/:id/messages    send a message { text }
+//   GET  /groups/:id             group details with member names
+//   POST /groups/:id/members     add people { memberIds: [...] } (any member can add)
+//   POST /groups/:id/leave       leave the group (an empty group is deleted)
 
 const express = require("express");
 const mongoose = require("mongoose");
@@ -224,6 +227,118 @@ router.post("/groups/:id/messages", auth, async (req, res) => {
     } catch (error) {
         console.error("Send group message error:", error);
         res.status(500).json({ message: "Could not send message." });
+    }
+});
+
+
+/* =========================
+   GROUP DETAILS (member names)
+========================= */
+
+router.get("/groups/:id", auth, async (req, res) => {
+    try {
+        const group = await getMyGroup(req, res);
+
+        if (!group) {
+            return;
+        }
+
+        await group.populate("members", "username name");
+
+        res.json({
+            _id: group._id,
+            name: group.name,
+            createdBy: group.createdBy,
+            isGroup: true,
+            members: group.members.map(member => ({
+                _id: member._id,
+                username: member.username || member.name || "Unknown"
+            }))
+        });
+    } catch (error) {
+        console.error("Group details error:", error);
+        res.status(500).json({ message: "Could not load the group." });
+    }
+});
+
+
+/* =========================
+   ADD PEOPLE TO A GROUP
+========================= */
+
+router.post("/groups/:id/members", auth, async (req, res) => {
+    try {
+        const group = await getMyGroup(req, res);
+
+        if (!group) {
+            return;
+        }
+
+        const memberIds = Array.isArray(req.body.memberIds) ? req.body.memberIds : [];
+        const existing = new Set(group.members.map(String));
+
+        // Only new, valid ids
+        const newIds = [...new Set(memberIds.map(String))]
+            .filter(id => mongoose.isValidObjectId(id) && !existing.has(id));
+
+        if (newIds.length === 0) {
+            return res.status(400).json({ message: "Pick at least 1 new person to add." });
+        }
+
+        if (group.members.length + newIds.length > MAX_MEMBERS) {
+            return res.status(400).json({ message: `A group can have up to ${MAX_MEMBERS} people.` });
+        }
+
+        const found = await User.countDocuments({ _id: { $in: newIds } });
+
+        if (found !== newIds.length) {
+            return res.status(400).json({ message: "Some of the selected people do not exist." });
+        }
+
+        group.members.push(...newIds);
+        await group.save();
+
+        res.json(publicGroup(group));
+    } catch (error) {
+        console.error("Add members error:", error);
+        res.status(500).json({ message: "Could not add people." });
+    }
+});
+
+
+/* =========================
+   LEAVE A GROUP
+========================= */
+
+router.post("/groups/:id/leave", auth, async (req, res) => {
+    try {
+        const group = await getMyGroup(req, res);
+
+        if (!group) {
+            return;
+        }
+
+        const myId = getMyId(req);
+
+        group.members = group.members.filter(member => String(member) !== myId);
+
+        if (group.members.length === 0) {
+            // Nobody is left, so remove the group and its messages
+            await GroupMessage.deleteMany({ groupId: group._id });
+            await group.deleteOne();
+        } else {
+            // If the creator leaves, the oldest remaining member becomes the creator
+            if (String(group.createdBy) === myId) {
+                group.createdBy = group.members[0];
+            }
+
+            await group.save();
+        }
+
+        res.json({ message: "You left the group." });
+    } catch (error) {
+        console.error("Leave group error:", error);
+        res.status(500).json({ message: "Could not leave the group." });
     }
 });
 
