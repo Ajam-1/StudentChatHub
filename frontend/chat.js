@@ -215,6 +215,8 @@ function showChatPartner() {
     if (headerAvatar && chatWith && !headerAvatar.querySelector("img")) {
         headerAvatar.textContent = chatWith.isGroup ? "👥" : chatWith.username.charAt(0);
     }
+
+    updateGroupInfoButton();
 }
 
 
@@ -1033,6 +1035,7 @@ let peopleMode = "chat";
 let selectedMembers = new Map();
 let groupNameInput = null;
 let groupCreateButton = null;
+let addMembersTarget = null; // the group people are being added to
 
 async function fetchUsers(term) {
     const url = term
@@ -1085,8 +1088,9 @@ function updateGroupCreateButton() {
 
     const count = selectedMembers.size;
 
-    groupCreateButton.textContent =
-        count > 0 ? `Create group (${count})` : "Create group";
+    const label = peopleMode === "addmembers" ? "Add to group" : "Create group";
+
+    groupCreateButton.textContent = count > 0 ? `${label} (${count})` : label;
 }
 
 function renderPeopleResults(people) {
@@ -1116,7 +1120,7 @@ function renderPeopleResults(people) {
         tag.className = "people-tag";
 
         function refreshTag() {
-            if (peopleMode === "group") {
+            if (peopleMode !== "chat") {
                 const selected = selectedMembers.has(person.id);
 
                 row.classList.toggle("selected", selected);
@@ -1135,8 +1139,8 @@ function renderPeopleResults(people) {
         row.appendChild(tag);
 
         row.addEventListener("click", () => {
-            // Group mode: tap to select or unselect people
-            if (peopleMode === "group") {
+            // Group modes: tap to select or unselect people
+            if (peopleMode !== "chat") {
                 if (selectedMembers.has(person.id)) {
                     selectedMembers.delete(person.id);
                 } else {
@@ -1178,7 +1182,12 @@ async function runPeopleSearch(term) {
             return;
         }
 
-        renderPeopleResults(people);
+        // When adding to an existing group, hide people who are already in it
+        const available = peopleMode === "addmembers" && addMembersTarget
+            ? people.filter(person => !addMembersTarget.memberIds.includes(person.id))
+            : people;
+
+        renderPeopleResults(available);
     } catch (error) {
         console.error("Could not load people:", error);
 
@@ -1260,15 +1269,24 @@ function setPeopleMode(mode) {
     peopleMode = mode;
     selectedMembers = new Map();
 
+    // "chat" and "group" share tabs; adding to an existing group has no tabs
+    peopleModal.querySelector(".people-tabs").style.display =
+        mode === "addmembers" ? "none" : "";
+
     peopleModal.querySelectorAll(".people-tab").forEach(tab => {
         tab.classList.toggle("active", tab.dataset.mode === mode);
     });
 
-    peopleModal.querySelector(".people-header h3").textContent =
-        mode === "group" ? "New group" : "Add people";
+    const titles = {
+        chat: "Add people",
+        group: "New group",
+        addmembers: "Add to group"
+    };
+
+    peopleModal.querySelector(".people-header h3").textContent = titles[mode] || "Add people";
 
     groupNameInput.hidden = mode !== "group";
-    groupCreateButton.hidden = mode !== "group";
+    groupCreateButton.hidden = mode === "chat";
     groupNameInput.value = "";
     peopleSearchInput.value = "";
 
@@ -1309,7 +1327,13 @@ function buildAddPeopleModal() {
         tab.addEventListener("click", () => setPeopleMode(tab.dataset.mode));
     });
 
-    groupCreateButton.addEventListener("click", createGroup);
+    groupCreateButton.addEventListener("click", () => {
+        if (peopleMode === "addmembers") {
+            addMembersToGroup();
+        } else {
+            createGroup();
+        }
+    });
 
     // Clicking the dark area outside the window closes it
     peopleModal.addEventListener("click", event => {
@@ -1350,6 +1374,349 @@ function openAddPeople() {
 function closeAddPeople() {
     if (peopleModal) {
         peopleModal.hidden = true;
+    }
+}
+
+/* ---------- Group info: members, add people, leave ---------- */
+
+async function readErrorMessage(response, fallback) {
+    try {
+        const data = await response.json();
+
+        if (data && data.message) {
+            return data.message;
+        }
+    } catch (error) {
+        console.error("Could not read error response:", error);
+    }
+
+    return fallback;
+}
+
+// The (i) button in the chat header. It only shows while a group is open.
+const groupInfoButton = document.createElement("button");
+groupInfoButton.type = "button";
+groupInfoButton.id = "group-info";
+groupInfoButton.title = "Group info";
+groupInfoButton.setAttribute("aria-label", "Group info");
+groupInfoButton.textContent = "ⓘ";
+groupInfoButton.hidden = true;
+
+const headerButtons =
+    document.querySelector(".chat-header .header-actions") ||
+    document.querySelector(".chat-header");
+
+if (headerButtons) {
+    headerButtons.appendChild(groupInfoButton);
+}
+
+groupInfoButton.addEventListener("click", () => openGroupInfo());
+
+function updateGroupInfoButton() {
+    groupInfoButton.hidden = !(chatWith && chatWith.isGroup);
+}
+
+// Shown when no chat is open (for example after leaving your only chat)
+function showNoChatSelected() {
+    if (messagesContainer) {
+        messagesContainer.innerHTML = `
+            <div class="no-messages">
+                Select a chat, or tap + to add someone.
+            </div>
+        `;
+    }
+
+    if (currentName) {
+        currentName.textContent = "Select a chat";
+    }
+
+    updateGroupInfoButton();
+    renderContactList();
+}
+
+let infoModal = null;
+let infoTitle = null;
+let infoCount = null;
+let infoMembers = null;
+let infoAddButton = null;
+let infoLeaveButton = null;
+let currentGroupInfo = null;
+
+function setInfoMessage(text) {
+    infoMembers.innerHTML = "";
+
+    const message = document.createElement("div");
+    message.className = "people-message";
+    message.textContent = text;
+
+    infoMembers.appendChild(message);
+}
+
+function renderGroupMembers(members, creatorId) {
+    const myId = getCurrentUserId();
+
+    infoMembers.innerHTML = "";
+    infoCount.textContent = members.length === 1 ? "1 member" : `${members.length} members`;
+
+    members.forEach(member => {
+        const row = document.createElement("div");
+        row.className = "people-row static";
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = member.username.charAt(0);
+
+        const name = document.createElement("span");
+        name.className = "people-name";
+        name.textContent = member.id === myId ? `${member.username} (you)` : member.username;
+
+        row.appendChild(avatar);
+        row.appendChild(name);
+
+        if (member.id === creatorId) {
+            const tag = document.createElement("span");
+            tag.className = "people-tag";
+            tag.textContent = "Creator";
+            row.appendChild(tag);
+        }
+
+        infoMembers.appendChild(row);
+    });
+}
+
+function buildGroupInfoModal() {
+    infoModal = document.createElement("div");
+    infoModal.className = "people-modal";
+    infoModal.hidden = true;
+
+    infoModal.innerHTML = `
+        <div class="people-dialog" role="dialog" aria-modal="true" aria-label="Group info">
+            <div class="people-header">
+                <h3 class="info-title"></h3>
+                <button type="button" class="people-close" aria-label="Close">✕</button>
+            </div>
+            <div class="info-count"></div>
+            <div class="people-results info-members"></div>
+            <button type="button" class="group-create info-add" hidden>Add people</button>
+            <button type="button" class="group-leave" hidden>Leave group</button>
+        </div>
+    `;
+
+    infoTitle = infoModal.querySelector(".info-title");
+    infoCount = infoModal.querySelector(".info-count");
+    infoMembers = infoModal.querySelector(".info-members");
+    infoAddButton = infoModal.querySelector(".info-add");
+    infoLeaveButton = infoModal.querySelector(".group-leave");
+
+    infoModal.querySelector(".people-close").addEventListener("click", closeGroupInfo);
+
+    // Clicking the dark area outside the window closes it
+    infoModal.addEventListener("click", event => {
+        if (event.target === infoModal) {
+            closeGroupInfo();
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && !infoModal.hidden) {
+            closeGroupInfo();
+        }
+    });
+
+    infoAddButton.addEventListener("click", () => {
+        if (!currentGroupInfo) {
+            return;
+        }
+
+        const info = currentGroupInfo;
+
+        closeGroupInfo();
+        openAddMembers(info);
+    });
+
+    infoLeaveButton.addEventListener("click", leaveGroup);
+
+    document.body.appendChild(infoModal);
+}
+
+async function openGroupInfo() {
+    if (!chatWith || !chatWith.isGroup) {
+        return;
+    }
+
+    if (!infoModal) {
+        buildGroupInfoModal();
+    }
+
+    const groupId = toId(chatWith.id);
+
+    currentGroupInfo = null;
+    infoTitle.textContent = chatWith.username;
+    infoCount.textContent = "";
+    infoAddButton.hidden = true;
+    infoLeaveButton.hidden = true;
+    setInfoMessage("Loading...");
+    infoModal.hidden = false;
+
+    try {
+        const response = await fetch(`${API_URL}/groups/${encodeURIComponent(groupId)}`, {
+            method: "GET",
+            headers: authHeaders()
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            handleAuthError();
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(`Group request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // The window was closed, or another chat was opened, while loading
+        if (infoModal.hidden || !chatWith || toId(chatWith.id) !== groupId) {
+            return;
+        }
+
+        const members = (Array.isArray(data.members) ? data.members : [])
+            .map(normalizeUser)
+            .filter(Boolean);
+
+        currentGroupInfo = {
+            id: groupId,
+            name: data.name || chatWith.username,
+            memberIds: members.map(member => member.id)
+        };
+
+        renderGroupMembers(members, toId(data.createdBy));
+
+        infoAddButton.hidden = false;
+        infoLeaveButton.hidden = false;
+    } catch (error) {
+        console.error("Could not load group info:", error);
+        setInfoMessage("Could not load group info. Please try again.");
+    }
+}
+
+function closeGroupInfo() {
+    if (infoModal) {
+        infoModal.hidden = true;
+    }
+}
+
+// Opens the people picker to add more people to an existing group
+function openAddMembers(info) {
+    addMembersTarget = info;
+
+    if (!peopleModal) {
+        buildAddPeopleModal();
+    }
+
+    peopleModal.hidden = false;
+
+    setPeopleMode("addmembers");
+    peopleSearchInput.focus();
+}
+
+async function addMembersToGroup() {
+    if (!addMembersTarget) {
+        return;
+    }
+
+    if (selectedMembers.size < 1) {
+        alert("Pick at least 1 person to add.");
+        return;
+    }
+
+    groupCreateButton.disabled = true;
+
+    try {
+        const response = await fetch(
+            `${API_URL}/groups/${encodeURIComponent(addMembersTarget.id)}/members`,
+            {
+                method: "POST",
+                headers: authHeaders(true),
+                body: JSON.stringify({ memberIds: [...selectedMembers.keys()] })
+            }
+        );
+
+        if (response.status === 401 || response.status === 403) {
+            handleAuthError();
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(await readErrorMessage(response, "Could not add people."));
+        }
+
+        closeAddPeople();
+        addMembersTarget = null;
+    } catch (error) {
+        console.error("Error adding people:", error);
+        alert(error.message || "Could not add people.");
+    } finally {
+        groupCreateButton.disabled = false;
+    }
+}
+
+async function leaveGroup() {
+    if (!currentGroupInfo) {
+        return;
+    }
+
+    const info = currentGroupInfo;
+
+    if (!confirm(`Leave "${info.name}"? You will stop getting its messages.`)) {
+        return;
+    }
+
+    infoLeaveButton.disabled = true;
+
+    try {
+        const response = await fetch(
+            `${API_URL}/groups/${encodeURIComponent(info.id)}/leave`,
+            {
+                method: "POST",
+                headers: authHeaders(true)
+            }
+        );
+
+        if (response.status === 401 || response.status === 403) {
+            handleAuthError();
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(await readErrorMessage(response, "Could not leave the group."));
+        }
+
+        groups = groups.filter(group => group.id !== info.id);
+        currentGroupInfo = null;
+        closeGroupInfo();
+
+        // If you were looking at this group, move to another chat
+        if (chatWith && toId(chatWith.id) === info.id) {
+            chatWith = null;
+            localStorage.removeItem("chatWith");
+            lastReceivedCount = -1;
+
+            const next = groups[0] || loadContacts()[0];
+
+            if (next) {
+                openChat(next);
+            } else {
+                showNoChatSelected();
+            }
+        }
+
+        renderContactList();
+    } catch (error) {
+        console.error("Error leaving group:", error);
+        alert(error.message || "Could not leave the group.");
+    } finally {
+        infoLeaveButton.disabled = false;
     }
 }
 
@@ -1416,34 +1783,3 @@ setInterval(() => {
         loadGroups();
     }
 }, 15000);
-/* Add people window: tabs and group form */
-.people-tabs { display: flex; gap: 6px; padding: 4px; background: var(--paper); border-radius: 12px; }
-.people-tab { flex: 1; padding: 9px; border-radius: 9px; font-weight: 600; color: var(--muted); }
-.people-tab.active { background: var(--white); color: var(--indigo); box-shadow: 0 1px 2px rgba(24, 27, 58, 0.12); }
-
-.group-name {
-    width: 100%;
-    padding: 12px 16px;
-    border-radius: 12px;
-    border: 2px solid transparent;
-    background: var(--paper);
-}
-.group-name:focus { outline: none; border-color: var(--indigo); background: var(--white); }
-.group-name[hidden] { display: none; }
-
-.people-row.selected { background: #e9eafc; }
-.people-row.selected .people-tag { color: var(--green); }
-
-.group-create {
-    padding: 13px;
-    border-radius: 12px;
-    background: var(--indigo);
-    color: var(--white);
-    font-weight: 600;
-}
-.group-create:hover { background: var(--indigo-dark); }
-.group-create:disabled { opacity: 0.6; cursor: default; }
-.group-create[hidden] { display: none; }
-
-/* Sender name inside group messages */
-.message-sender { margin-bottom: 2px; font-size: 12px; font-weight: 600; color: var(--indigo); }
