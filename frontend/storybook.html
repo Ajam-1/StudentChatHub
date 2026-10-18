@@ -1,1 +1,62 @@
 
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>ChatHub - Storybook</title>
+    <meta name="description" content="Free Korean stories and official free manga for teens and adults, picked for ChatHub.">
+
+    <link rel="stylesheet" href="storybook.css">
+</head>
+
+<body>
+
+    <header class="top-bar">
+        <a class="back" href="studentchathub.html" aria-label="Back to ChatHub">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>
+        </a>
+        <h1>Storybook</h1>
+        <button class="saved-toggle" id="saved-toggle" type="button" aria-pressed="false" title="Show saved">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/></svg>
+            <span>Saved</span>
+        </button>
+    </header>
+
+    <main>
+
+        <section class="intro">
+            <h2>Stories and manga</h2>
+            <p>Free Korean stories and official free manga for teens and adults. Everything opens on the original site.</p>
+        </section>
+
+        <input type="search" id="story-search" placeholder="Search by title or author" autocomplete="off">
+
+        <div class="tabs" id="tabs" role="group" aria-label="Type"></div>
+
+        <p class="filter-label">Audience</p>
+        <div class="chips" id="audience-chips" role="group" aria-label="Filter by audience"></div>
+
+        <p class="filter-label">Genre</p>
+        <div class="chips" id="chips" role="group" aria-label="Filter by genre"></div>
+
+        <div class="story-grid" id="stories" aria-live="polite"></div>
+
+        <div class="notice">
+            <strong>Good to know.</strong>
+            Korean stories marked <em>Public domain</em> have expired copyright, but a modern translation or edited edition can still be protected, so check each page.
+            Manga is copyrighted: the links go to the publishers' official free readers, and ChatHub does not copy or host any pages.
+            Some manga is for mature readers.
+        </div>
+
+        <footer class="credits">
+            Stories and manga belong to their authors and publishers. ChatHub only links to them.
+        </footer>
+
+    </main>
+
+    <script src="storybook.js"></script>
+</body>
+
+</html>
