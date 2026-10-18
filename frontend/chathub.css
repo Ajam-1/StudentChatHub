@@ -1,31 +1,40 @@
 /* ==========================================================
-   ChatHub - chathub.css  (users page)
+   ChatHub - chathub.css  (users page, indigo design)
 
-
-   Same look as chat.css so the two pages feel like one app.
    Works with your existing markup:
      header > h1 + .account (#username, #logout)
-     main > .welcome (h2, p) + #search + #users
+     main > .welcome (h2, p) + [storybook link] + #search + #users
      #users > .user (.user-name + .chat-button)
      #users > p  (loading / empty message)
 
+   Optional: <div class="user-avatar">A</div> before .user-name
+   shows a letter avatar.
 
-   Optional: put <div class="user-avatar">A</div> before
-   .user-name inside each .user to show a letter avatar.
+   Storybook link: paste this inside <main>, right after .welcome
 
+   <a class="storybook-link" href="storybook.html">
+       <span class="storybook-icon" aria-hidden="true">
+           <svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"/><path d="M4 21.5A2.5 2.5 0 0 1 6.5 19H20v2H6.5A2.5 2.5 0 0 1 4 21.5Z"/><path d="M9 8h7M9 11.5h5"/></svg>
+       </span>
+       <span class="storybook-text">
+           <strong>Storybook</strong>
+           <small>Free Korean stories and manga to read</small>
+       </span>
+       <span class="storybook-go" aria-hidden="true">
+           <svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
+       </span>
+   </a>
 
    Palette
      ink       #181B3A  header
      paper     #F3F4FA  page background
-     indigo    #4B4FE0  buttons
+     indigo    #4B4FE0  buttons, storybook banner
      marigold  #FFB020  accent
      green     #2FBF71  online
    Type: Bricolage Grotesque (headings) + Figtree (body)
    ========================================================== */
 
-
 @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap");
-
 
 :root {
     --ink: #181b3a;
@@ -37,6 +46,7 @@
     --line: #e3e5f3;
     --indigo: #4b4fe0;
     --indigo-dark: #3a3ec2;
+    --indigo-deep: #2d3099;
     --indigo-soft: #e8e9fb;
     --marigold: #ffb020;
     --green: #2fbf71;
@@ -45,11 +55,9 @@
     --on-dark: #e8e9f7;
     --on-dark-muted: #9a9dc6;
 
-
     --font-head: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
     --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
 }
-
 
 *,
 *::before,
@@ -59,11 +67,9 @@
     box-sizing: border-box;
 }
 
-
 html {
     -webkit-text-size-adjust: 100%;
 }
-
 
 body {
     min-height: 100vh;
@@ -77,19 +83,16 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-
 button,
 input {
     font: inherit;
     color: inherit;
 }
 
-
 button {
     cursor: pointer;
     border: 0;
 }
-
 
 :focus-visible {
     outline: 3px solid var(--marigold);
@@ -97,12 +100,9 @@ button {
 }
 
 
-
-
 /* =========================
    HEADER
 ========================= */
-
 
 header {
     position: sticky;
@@ -118,7 +118,6 @@ header {
     color: var(--on-dark);
 }
 
-
 header h1 {
     font-family: var(--font-head);
     font-size: 26px;
@@ -126,7 +125,6 @@ header h1 {
     letter-spacing: -0.02em;
     color: var(--white);
 }
-
 
 .account {
     display: flex;
@@ -137,7 +135,6 @@ header h1 {
     font-weight: 600;
 }
 
-
 #username {
     min-width: 0;
     overflow: hidden;
@@ -145,7 +142,6 @@ header h1 {
     white-space: nowrap;
     color: var(--white);
 }
-
 
 #username::before {
     content: "";
@@ -158,12 +154,9 @@ header h1 {
 }
 
 
-
-
 /* =========================
    LOGOUT
 ========================= */
-
 
 #logout {
     flex: none;
@@ -176,19 +169,15 @@ header h1 {
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-
 #logout:hover {
     background: var(--ink-soft);
     border-color: var(--on-dark-muted);
 }
 
 
-
-
 /* =========================
    MAIN
 ========================= */
-
 
 main {
     width: 90%;
@@ -197,17 +186,13 @@ main {
 }
 
 
-
-
 /* =========================
    WELCOME
 ========================= */
 
-
 .welcome {
-    margin-bottom: 22px;
+    margin-bottom: 18px;
 }
-
 
 .welcome h2 {
     margin-bottom: 6px;
@@ -218,19 +203,142 @@ main {
     color: var(--ink);
 }
 
-
 .welcome p {
     font-size: 15px;
     color: var(--muted);
 }
 
 
+/* =========================
+   STORYBOOK LINK  (indigo banner card)
+========================= */
+
+.storybook-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 16px 18px;
+    overflow: hidden;
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--indigo) 0%, var(--indigo-deep) 100%);
+    color: var(--white);
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(75, 79, 224, 0.28);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* soft marigold glow and dotted pattern, like a notebook page */
+.storybook-link::before {
+    content: "";
+    position: absolute;
+    right: -36px;
+    top: -46px;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(var(--marigold), transparent 68%);
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.storybook-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1.2px, transparent 1.3px);
+    background-size: 18px 18px;
+    pointer-events: none;
+}
+
+.storybook-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(75, 79, 224, 0.36);
+}
+
+.storybook-link:active {
+    transform: scale(0.99);
+}
+
+.storybook-link svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.storybook-icon {
+    position: relative;
+    z-index: 1;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: var(--marigold);
+    color: var(--ink);
+    transform: rotate(-6deg);
+    transition: transform 0.2s ease;
+}
+
+.storybook-link:hover .storybook-icon {
+    transform: rotate(0deg);
+}
+
+.storybook-text {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-width: 0;
+}
+
+.storybook-text strong {
+    display: block;
+    font-family: var(--font-head);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.storybook-text small {
+    display: block;
+    margin-top: 2px;
+    font-size: 14px;
+    color: #d8daf8;
+}
+
+.storybook-go {
+    position: relative;
+    z-index: 1;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.storybook-link:hover .storybook-go {
+    transform: translateX(3px);
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.storybook-go svg {
+    width: 18px;
+    height: 18px;
+}
 
 
 /* =========================
    SEARCH
 ========================= */
-
 
 #search {
     display: block;
@@ -247,30 +355,24 @@ main {
     transition: border-color 0.15s ease;
 }
 
-
 #search::placeholder {
     color: var(--muted);
 }
-
 
 #search:focus {
     border-color: var(--indigo);
 }
 
 
-
-
 /* =========================
    USERS
 ========================= */
-
 
 #users {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
-
 
 .user {
     position: relative;
@@ -285,12 +387,10 @@ main {
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-
 .user:hover {
     border-color: var(--indigo);
     box-shadow: 0 4px 14px rgba(75, 79, 224, 0.12);
 }
-
 
 .user-avatar {
     flex: none;
@@ -308,13 +408,11 @@ main {
     overflow: hidden;
 }
 
-
 .user-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-
 
 .user-name {
     flex: 1;
@@ -328,12 +426,9 @@ main {
 }
 
 
-
-
 /* =========================
    CHAT BUTTON
 ========================= */
-
 
 .chat-button {
     flex: none;
@@ -345,23 +440,18 @@ main {
     transition: background 0.15s ease, transform 0.1s ease;
 }
 
-
 .chat-button:hover {
     background: var(--indigo-dark);
 }
-
 
 .chat-button:active {
     transform: scale(0.96);
 }
 
 
-
-
 /* =========================
    EMPTY / LOADING
 ========================= */
-
 
 #users > p {
     padding: 26px;
@@ -373,39 +463,30 @@ main {
 }
 
 
-
-
 /* =========================
    PHONE
    Full-width list, big tap targets, no side panels.
 ========================= */
 
-
 @media (max-width: 600px) {
 
-
     header {
-        height: 60px;
         padding: 0 14px;
         padding-top: env(safe-area-inset-top, 0px);
         height: calc(60px + env(safe-area-inset-top, 0px));
     }
 
-
     header h1 {
         font-size: 22px;
     }
-
 
     .account {
         gap: 10px;
     }
 
-
     #logout {
         padding: 8px 12px;
     }
-
 
     main {
         width: 100%;
@@ -413,29 +494,39 @@ main {
         padding: 22px 0 calc(40px + env(safe-area-inset-bottom, 0px));
     }
 
-
     .welcome,
+    .storybook-link,
     #search {
         margin-left: 14px;
         margin-right: 14px;
     }
 
-
     .welcome {
         width: auto;
     }
-
 
     .welcome h2 {
         font-size: 24px;
     }
 
+    .storybook-link {
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .storybook-icon {
+        width: 46px;
+        height: 46px;
+    }
+
+    .storybook-text strong {
+        font-size: 18px;
+    }
 
     #search {
         width: calc(100% - 28px);
         font-size: 16px; /* stops iPhones zooming on focus */
     }
-
 
     /* Edge-to-edge rows, like a classic chat list */
     #users {
@@ -445,7 +536,6 @@ main {
         border-bottom: 1px solid var(--line);
     }
 
-
     .user {
         min-height: 68px;
         padding: 10px 14px;
@@ -454,11 +544,9 @@ main {
         border-radius: 0;
     }
 
-
     .user:last-child {
         border-bottom: 0;
     }
-
 
     .user:hover {
         box-shadow: none;
@@ -466,17 +554,14 @@ main {
         background: var(--paper);
     }
 
-
     .chat-button {
         padding: 9px 16px;
     }
-
 
     #users > p {
         margin: 14px;
     }
 }
-
 
 @media (prefers-reduced-motion: reduce) {
     * {
