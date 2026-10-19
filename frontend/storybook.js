@@ -5,6 +5,35 @@
    Existing HTML controls are reused where available.
    ========================================================= */
 
+/* ---------- Required Storybook setup ---------- */
+var SAVE_KEY = "chathub-saved-stories";
+
+var COLORS = [
+    "#7357D9", "#D9688B", "#397C83",
+    "#C17A42", "#5C6BC0", "#56865A"
+];
+
+var grid = document.getElementById("stories");
+var search = document.getElementById("story-search");
+var tabBox = document.getElementById("tabs");
+var audienceBox = document.getElementById("audience-chips");
+var genreBox = document.getElementById("chips");
+var savedBtn = document.getElementById("saved-toggle");
+
+if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
+    console.error(
+        "Peerva Storybook could not start. Check the HTML IDs:",
+        {
+            grid: !!grid,
+            search: !!search,
+            tabs: !!tabBox,
+            audience: !!audienceBox,
+            genres: !!genreBox,
+            savedButton: !!savedBtn
+        }
+    );
+}
+
 (function () {
   "use strict";
 
