@@ -1,12 +1,17 @@
 
-/* storybook.js
-   Peerva Storybook + Manga Library
-   Real titles from public-domain collections and official reading platforms.
-   This catalogue links to the source; it does not copy chapters or manga pages.
-*/
+/* ==========================================================
+   PEERVA STORYBOOK + MANGA LIBRARY
+   Features:
+   - Stories and Manga filters
+   - Audience and genre filters
+   - Search inside Peerva
+   - External book search for titles not in Peerva
+   - Saved titles
+   - Official source links
+   ========================================================== */
 
 var ITEMS = [
-    /* ---------- English public-domain books ---------- */
+    /* ---------- Public-domain English books ---------- */
     {
         id: "pride-prejudice",
         type: "Story",
@@ -21,7 +26,7 @@ var ITEMS = [
         url: "https://www.gutenberg.org/ebooks/1342"
     },
     {
-        id: "alice-wonderland",
+        id: "alice",
         type: "Story",
         title: "Alice's Adventures in Wonderland",
         author: "Lewis Carroll",
@@ -34,7 +39,7 @@ var ITEMS = [
         url: "https://www.gutenberg.org/ebooks/11"
     },
     {
-        id: "sherlock-holmes",
+        id: "sherlock",
         type: "Story",
         title: "The Adventures of Sherlock Holmes",
         author: "Arthur Conan Doyle",
@@ -58,7 +63,7 @@ var ITEMS = [
         summary: "A scientist's experiment creates a being whose search for companionship leads to tragedy.",
         source: "Project Gutenberg",
         url: "https://www.gutenberg.org/ebooks/84",
-        note: "Contains dark themes and frightening scenes."
+        note: "Dark themes and frightening scenes."
     },
     {
         id: "wizard-oz",
@@ -69,109 +74,160 @@ var ITEMS = [
         audience: "Teens",
         lang: "English",
         rights: "Public domain",
-        summary: "Dorothy and her unusual companions travel through Oz hoping to find what each of them needs.",
+        summary: "Dorothy and her companions travel through Oz hoping to find what each of them needs.",
         source: "Project Gutenberg",
         url: "https://www.gutenberg.org/ebooks/55"
     },
-
-    /* ---------- English romance and web novels ---------- */
     {
-        id: "bride-never-chose",
+        id: "dracula",
+        type: "Story",
+        title: "Dracula",
+        author: "Bram Stoker",
+        genre: "Horror",
+        audience: "Adults",
+        lang: "English",
+        rights: "Public domain",
+        summary: "A group of people confronts the terrifying Count Dracula and his supernatural powers.",
+        source: "Project Gutenberg",
+        url: "https://www.gutenberg.org/ebooks/345"
+    },
+    {
+        id: "jane-eyre",
+        type: "Story",
+        title: "Jane Eyre",
+        author: "Charlotte Brontë",
+        genre: "Romance",
+        audience: "Teens & Adults",
+        lang: "English",
+        rights: "Public domain",
+        summary: "An independent young woman becomes a governess and discovers secrets at Thornfield Hall.",
+        source: "Project Gutenberg",
+        url: "https://www.gutenberg.org/ebooks/1260"
+    },
+    {
+        id: "little-women",
+        type: "Story",
+        title: "Little Women",
+        author: "Louisa May Alcott",
+        genre: "Family",
+        audience: "Teens",
+        lang: "English",
+        rights: "Public domain",
+        summary: "The March sisters grow up, pursue their dreams and navigate love, hardship and family life.",
+        source: "Project Gutenberg",
+        url: "https://www.gutenberg.org/ebooks/514"
+    },
+    {
+        id: "secret-garden",
+        type: "Story",
+        title: "The Secret Garden",
+        author: "Frances Hodgson Burnett",
+        genre: "Adventure",
+        audience: "Teens",
+        lang: "English",
+        rights: "Public domain",
+        summary: "A lonely girl discovers a hidden garden that changes the lives of everyone around her.",
+        source: "Project Gutenberg",
+        url: "https://www.gutenberg.org/ebooks/113"
+    },
+    {
+        id: "treasure-island",
+        type: "Story",
+        title: "Treasure Island",
+        author: "Robert Louis Stevenson",
+        genre: "Adventure",
+        audience: "Teens",
+        lang: "English",
+        rights: "Public domain",
+        summary: "A young boy joins a dangerous voyage in search of buried pirate treasure.",
+        source: "Project Gutenberg",
+        url: "https://www.gutenberg.org/ebooks/120"
+    },
+
+    /* ---------- English web novels ---------- */
+    {
+        id: "bedreads-bride",
         type: "Story",
         title: "The Bride He Never Chose",
         author: "ao3_refugee",
         genre: "Billionaire Romance",
         audience: "Adults",
         lang: "English",
-        rights: "Official free reader",
-        summary: "A woman is forced to marry a billionaire in her cousin's place, and the marriage begins with suspicion and secrets.",
+        rights: "Official reader",
+        summary: "A marriage begins with suspicion and secrets when a woman takes her cousin's place.",
         source: "BedReads",
         url: "https://www.bedreads.net/r/the-bride-he-never-chose-b26e1ff9-e7df-4d8f-bbc7-3252287ab960",
-        note: "Romance with mature themes. First four chapters free online."
+        note: "Mature romance themes. Check the reading options on the source site."
     },
     {
-        id: "bought-billionaire",
+        id: "bedreads-bought",
         type: "Story",
         title: "Bought by the Billionaire",
         author: "plot_hole_patcher",
         genre: "Billionaire Romance",
         audience: "Adults",
         lang: "English",
-        rights: "Official free reader",
-        summary: "A marriage made for business turns into a difficult relationship filled with secrets and conflict.",
+        rights: "Official reader",
+        summary: "A business arrangement develops into a complicated relationship full of secrets.",
         source: "BedReads",
         url: "https://www.bedreads.net/r/bought-by-the-billionaire-7a65c9d5-1601-41b7-bf73-693849787bdb",
-        note: "Mature romance themes. First four chapters free online."
+        note: "Mature romance themes."
     },
     {
-        id: "voiceless-bride",
+        id: "bedreads-voiceless",
         type: "Story",
         title: "The Voiceless Bride He Waited For",
         author: "wip_whisperer",
         genre: "Billionaire Romance",
         audience: "Adults",
         lang: "English",
-        rights: "Official free reader",
-        summary: "A hidden identity and a long-lost love connect a silent woman with a billionaire searching for someone from his past.",
+        rights: "Official reader",
+        summary: "A hidden identity connects a woman with a billionaire searching for someone from his past.",
         source: "BedReads",
         url: "https://www.bedreads.net/r/the-voiceless-bride-he-waited-for-18902e00-adb0-478d-a18f-d55523c09ee5",
-        note: "Mature romance themes. First four chapters free online."
+        note: "Mature romance themes."
     },
     {
-        id: "reborn-save-husband",
+        id: "bedreads-reborn",
         type: "Story",
         title: "Reborn to Save the Husband I Buried",
         author: "plot_hole_patcher",
         genre: "Romance Fantasy",
         audience: "Adults",
         lang: "English",
-        rights: "Official free reader",
-        summary: "After a tragic ending, a woman gets another chance to change her past and save the husband she once lost.",
+        rights: "Official reader",
+        summary: "A woman gets another chance to change her past and save the husband she lost.",
         source: "BedReads",
         url: "https://www.bedreads.net/r/reborn-to-save-the-husband-i-buried-45c1fb4e-acfa-4767-903f-024b339c9810",
-        note: "Contains grief and mature romance themes. First four chapters free online."
+        note: "Grief and mature romance themes."
     },
     {
-        id: "wrong-woman-wed",
+        id: "bedreads-wrong-woman",
         type: "Story",
         title: "He Kidnapped the Wrong Woman to Wed",
         author: "tbr_mountaineer",
         genre: "Billionaire Romance",
         audience: "Adults",
         lang: "English",
-        rights: "Official free reader",
-        summary: "A billionaire marries the wrong woman, whose hidden talents and secrets challenge his assumptions about her.",
+        rights: "Official reader",
+        summary: "An unexpected marriage challenges a billionaire's assumptions about the woman he has chosen.",
         source: "BedReads",
         url: "https://www.bedreads.net/r/he-kidnapped-the-wrong-woman-to-wed-cd9b6c6b-275c-41a9-a9ef-ab95da1c8377",
-        note: "Mature romance themes. First four chapters free online."
+        note: "Mature romance themes."
     },
     {
-        id: "bedreads-billionaire",
+        id: "bedreads-romance",
         type: "Story",
         title: "More Billionaire Romance Novels",
         author: "Various authors",
         genre: "Billionaire Romance",
         audience: "Adults",
         lang: "English",
-        rights: "Official free reader",
-        summary: "Browse more stories about billionaires, secret marriages, unexpected relationships and family drama.",
+        rights: "Official reader",
+        summary: "Discover romance novels featuring wealthy characters, secret marriages and complicated relationships.",
         source: "BedReads",
         url: "https://www.bedreads.net/",
-        note: "Choose a title on BedReads. Free online previews; full reading may require its app."
-    },
-    {
-        id: "bedreads-fantasy",
-        type: "Story",
-        title: "More Fantasy Web Novels",
-        author: "Various authors",
-        genre: "Fantasy",
-        audience: "Teens & Adults",
-        lang: "English",
-        rights: "Official free reader",
-        summary: "Explore fantasy stories featuring reincarnation, magical worlds, royalty and second chances.",
-        source: "BedReads",
-        url: "https://www.bedreads.net/genre/fantasy",
-        note: "Check each title's content rating before reading."
+        note: "Browse the source for available titles and reading options."
     },
 
     /* ---------- Official English webtoons ---------- */
@@ -183,56 +239,50 @@ var ITEMS = [
         genre: "Romance Fantasy",
         audience: "Adults",
         lang: "English",
-        rights: "Official free reader",
-        summary: "After her husband demands a divorce, an empress decides to build a new future on her own terms.",
+        rights: "Official reader",
+        summary: "An empress plans a new future after her husband asks for a divorce.",
         source: "WEBTOON",
-        url: "https://www.webtoons.com/en/fantasy/the-remarried-empress/list?title_no=2135",
-        note: "Check the platform's age rating and episode access."
+        url: "https://www.webtoons.com/en/fantasy/the-remarried-empress/list?title_no=2135"
     },
     {
-        id: "maybe-meant-be",
+        id: "maybe-meant",
         type: "Manga",
         title: "Maybe Meant to Be",
         author: "honeyskein and damcho",
         genre: "Romance",
         audience: "Teens & Adults",
         lang: "English",
-        rights: "Official free reader",
-        summary: "Two childhood friends agree to marry after growing tired of family pressure, and discover what their agreement means.",
+        rights: "Official reader",
+        summary: "Two childhood friends agree to marry and discover what their unexpected arrangement means.",
         source: "WEBTOON",
-        url: "https://www.webtoons.com/en/romance/maybe-meant-to-be/list?title_no=4208",
-        note: "Episode access may vary."
+        url: "https://www.webtoons.com/en/romance/maybe-meant-to-be/list?title_no=4208"
     },
     {
-        id: "greatest-estate",
+        id: "estate-developer",
         type: "Manga",
         title: "The Greatest Estate Developer",
         author: "BK_Moon, Lee Hyun Min and Kim Hyunsoo",
         genre: "Fantasy",
         audience: "Teens & Adults",
         lang: "English",
-        rights: "Official free reader",
-        summary: "A civil engineering student wakes up as a noble in a fantasy novel and uses his knowledge to save a debt-ridden family.",
+        rights: "Official reader",
+        summary: "An engineering student uses his knowledge to transform a struggling noble family's fortunes.",
         source: "WEBTOON",
-        url: "https://www.webtoons.com/en/fantasy/the-greatest-estate-developer/list?title_no=3596",
-        note: "Episode access may vary."
+        url: "https://www.webtoons.com/en/fantasy/the-greatest-estate-developer/list?title_no=3596"
     },
     {
-        id: "webtoon-romance",
+        id: "webtoon-library",
         type: "Manga",
-        title: "Discover Romance Webtoons",
+        title: "Explore WEBTOON",
         author: "Various creators",
-        genre: "Romance",
+        genre: "Webtoons",
         audience: "Teens & Adults",
         lang: "English",
-        rights: "Official free reader",
-        summary: "Find more romance comics, relationship stories and romantic dramas from different creators.",
+        rights: "Official reader",
+        summary: "Discover romance, fantasy, drama, action and comedy comics from many creators.",
         source: "WEBTOON",
-        url: "https://www.webtoons.com/en/",
-        note: "Search the site and check each series' age rating."
+        url: "https://www.webtoons.com/en/"
     },
-
-    /* ---------- Official manga reader ---------- */
     {
         id: "mangaplus",
         type: "Manga",
@@ -241,11 +291,10 @@ var ITEMS = [
         genre: "Manga Library",
         audience: "Teens & Adults",
         lang: "English",
-        rights: "Official free reader",
-        summary: "Read officially published manga series in English. Available chapters and free-reading rules vary by series.",
+        rights: "Official reader",
+        summary: "Browse officially published manga and check which chapters are available to read.",
         source: "MANGA Plus",
-        url: "https://mangaplus.shueisha.co.jp/",
-        note: "Check chapter availability in your region."
+        url: "https://mangaplus.shueisha.co.jp/"
     },
     {
         id: "spy-family",
@@ -255,11 +304,10 @@ var ITEMS = [
         genre: "Comedy",
         audience: "Teens & Adults",
         lang: "English",
-        rights: "Official publisher reader",
-        summary: "A spy creates a fake family for a mission, unaware that his new wife and daughter each have secrets of their own.",
+        rights: "Official reader",
+        summary: "A spy creates a fake family for a mission, unaware that his wife and daughter have secrets of their own.",
         source: "MANGA Plus",
-        url: "https://mangaplus.shueisha.co.jp/",
-        note: "Search the title in the official reader."
+        url: "https://mangaplus.shueisha.co.jp/"
     },
     {
         id: "jujutsu-kaisen",
@@ -269,11 +317,11 @@ var ITEMS = [
         genre: "Action",
         audience: "Adults",
         lang: "English",
-        rights: "Official publisher reader",
-        summary: "A student enters the dangerous world of curses and sorcerers after swallowing a cursed object.",
+        rights: "Official reader",
+        summary: "A student enters the dangerous world of curses and sorcerers.",
         source: "MANGA Plus",
         url: "https://mangaplus.shueisha.co.jp/",
-        note: "Contains intense supernatural violence. Search the title in the official reader."
+        note: "Contains supernatural violence."
     },
     {
         id: "chainsaw-man",
@@ -283,16 +331,16 @@ var ITEMS = [
         genre: "Action",
         audience: "Adults",
         lang: "English",
-        rights: "Official publisher reader",
-        summary: "A young devil hunter gains a terrifying new power and becomes involved in dangerous battles.",
+        rights: "Official reader",
+        summary: "A young devil hunter gains terrifying new powers and becomes involved in dangerous battles.",
         source: "MANGA Plus",
         url: "https://mangaplus.shueisha.co.jp/",
-        note: "Strong violence and mature themes. Search the title in the official reader."
+        note: "Strong violence and mature themes."
     }
 ];
 
 
-/* ---------- Library setup ---------- */
+/* ---------- Styling helpers ---------- */
 
 var COLORS = [
     "#4b4fe0",
@@ -318,11 +366,13 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
     var activeGenre = "All";
     var onlySaved = false;
     var saved = loadSaved();
+    var externalSearchId = 0;
+    var externalTimer = null;
 
     function loadSaved() {
         try {
             return JSON.parse(localStorage.getItem(SAVE_KEY)) || [];
-        } catch (e) {
+        } catch (error) {
             return [];
         }
     }
@@ -330,26 +380,31 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
     function storeSaved() {
         try {
             localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
-        } catch (e) {
-            // Saving may be unavailable in private browsing.
+        } catch (error) {
+            // The library still works if browser storage is unavailable.
         }
     }
 
     function el(tag, className, text) {
         var node = document.createElement(tag);
+
         if (className) node.className = className;
+
         if (text !== undefined && text !== null) {
             node.textContent = text;
         }
+
         return node;
     }
 
     function heartIcon() {
         var wrap = document.createElement("span");
+
         wrap.innerHTML =
             '<svg viewBox="0 0 24 24" aria-hidden="true">' +
             '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>' +
             '</svg>';
+
         return wrap.firstChild;
     }
 
@@ -370,6 +425,7 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
 
         values.forEach(function (value) {
             var button = el("button", className, value);
+
             button.type = "button";
             button.setAttribute(
                 "aria-pressed",
@@ -384,7 +440,7 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
         });
     }
 
-    /* ---------- Controls ---------- */
+    /* ---------- Filters ---------- */
 
     function buildControls() {
         makeButtons(
@@ -426,10 +482,10 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
         var genres = ["All"];
 
         ITEMS.forEach(function (item) {
-            var inType =
+            var typeMatches =
                 activeType === "All" || item.type === activeType;
 
-            if (inType && genres.indexOf(item.genre) === -1) {
+            if (typeMatches && genres.indexOf(item.genre) === -1) {
                 genres.push(item.genre);
             }
         });
@@ -447,7 +503,7 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
         );
     }
 
-    /* ---------- Cards ---------- */
+    /* ---------- Existing library cards ---------- */
 
     function makeCard(item, index) {
         var card = el("article", "story");
@@ -462,6 +518,7 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
                 COLORS[index % COLORS.length];
 
             var coverText = el("div", "cover-text");
+
             coverText.appendChild(
                 el("span", "cover-title", item.title)
             );
@@ -475,8 +532,8 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
             cover.appendChild(coverText);
         }
 
-        var isSaved = saved.indexOf(item.id) !== -1;
         var heart = el("button", "heart");
+        var isSaved = saved.indexOf(item.id) !== -1;
 
         heart.type = "button";
         heart.setAttribute(
@@ -502,14 +559,17 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
         cover.appendChild(heart);
 
         var body = el("div", "story-body");
+
         body.appendChild(
             el("div", "story-meta", item.author + " · " + item.genre)
         );
 
         var badges = el("div", "badges");
+
         badges.appendChild(el("span", "badge", item.audience));
         badges.appendChild(el("span", "badge plain", item.lang));
         badges.appendChild(el("span", "badge plain", item.rights));
+
         body.appendChild(badges);
 
         body.appendChild(
@@ -535,24 +595,230 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
         read.href = item.url;
         read.target = "_blank";
         read.rel = "noopener noreferrer";
-        body.appendChild(read);
 
+        body.appendChild(read);
         card.appendChild(cover);
         card.appendChild(body);
 
         return card;
     }
 
-    /* ---------- Render ---------- */
+    /* ---------- External search result cards ---------- */
 
-    function render() {
-        var query = search.value.trim().toLowerCase();
+    function makeExternalCard(item) {
+        var card = el("article", "story");
+        var cover = el("div", "cover no-image");
+
+        cover.style.backgroundColor = "#6251a8";
+
+        var coverText = el("div", "cover-text");
+        coverText.appendChild(
+            el("span", "cover-title", item.title)
+        );
+
+        cover.appendChild(coverText);
+
+        var body = el("div", "story-body");
+
+        body.appendChild(
+            el("div", "story-meta", item.author || "Author unknown")
+        );
+
+        var badges = el("div", "badges");
+        badges.appendChild(
+            el("span", "badge plain", item.source)
+        );
+
+        body.appendChild(badges);
+
+        body.appendChild(
+            el("p", "story-summary", item.description)
+        );
+
+        body.appendChild(
+            el("span", "story-source", "External catalogue: " + item.source)
+        );
+
+        var link = el("a", "read-btn", item.button || "View book");
+
+        link.href = item.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        body.appendChild(link);
+        card.appendChild(cover);
+        card.appendChild(body);
+
+        return card;
+    }
+
+    function addPlatformSearch(query, name, domain) {
+        var card = el("article", "story");
+        var body = el("div", "story-body");
+
+        body.appendChild(
+            el("div", "story-meta", name)
+        );
+
+        body.appendChild(
+            el("p", "story-summary",
+                'Search "' + query + '" on ' + name + "."
+            )
+        );
+
+        var link = el("a", "read-btn", "Search " + name);
+
+        link.href =
+            "https://www.google.com/search?q=" +
+            encodeURIComponent("site:" + domain + " " + query);
+
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        body.appendChild(link);
+        card.appendChild(body);
+
+        return card;
+    }
+
+    async function searchExternalBooks(query, requestId) {
+        var endpoints = [
+            {
+                source: "Google Books",
+                url: "https://www.googleapis.com/books/v1/volumes?q=" +
+                    encodeURIComponent(query) +
+                    "&maxResults=8&printType=books"
+            },
+            {
+                source: "Open Library",
+                url: "https://openlibrary.org/search.json?q=" +
+                    encodeURIComponent(query) +
+                    "&fields=key,title,author_name,first_publish_year" +
+                    "&limit=8&lang=en"
+            }
+        ];
+
+        var responses = await Promise.allSettled(
+            endpoints.map(function (endpoint) {
+                return fetch(endpoint.url).then(function (response) {
+                    if (!response.ok) {
+                        throw new Error("Catalogue request failed");
+                    }
+
+                    return response.json();
+                });
+            })
+        );
+
+        if (requestId !== externalSearchId) return;
+
+        var results = [];
+        var seen = new Set();
+
+        responses.forEach(function (response, index) {
+            if (response.status !== "fulfilled") return;
+
+            var data = response.value;
+
+            if (index === 0) {
+                (data.items || []).forEach(function (book) {
+                    var info = book.volumeInfo || {};
+
+                    if (!info.title) return;
+
+                    var key = info.title.toLowerCase();
+
+                    if (seen.has(key)) return;
+                    seen.add(key);
+
+                    results.push({
+                        title: info.title,
+                        author: (info.authors || ["Author unknown"]).join(", "),
+                        description: info.description ||
+                            "Book catalogue entry. Check the source for reading availability.",
+                        source: "Google Books",
+                        url: info.infoLink || "https://books.google.com/",
+                        button: "View book details"
+                    });
+                });
+            } else {
+                (data.docs || []).forEach(function (book) {
+                    if (!book.title || !book.key) return;
+
+                    var key = book.title.toLowerCase();
+
+                    if (seen.has(key)) return;
+                    seen.add(key);
+
+                    results.push({
+                        title: book.title,
+                        author: (book.author_name || ["Author unknown"]).join(", "),
+                        description: "Book listing" +
+                            (book.first_publish_year
+                                ? " · First published " + book.first_publish_year
+                                : "") +
+                            ". Check whether a readable edition is available.",
+                        source: "Open Library",
+                        url: "https://openlibrary.org" + book.key,
+                        button: "View book listing"
+                    });
+                });
+            }
+        });
+
+        if (requestId !== externalSearchId) return;
+
+        var heading = el(
+            "p",
+            "empty",
+            results.length
+                ? "More results from external book catalogues"
+                : "No book results found in the connected catalogues."
+        );
+
+        grid.appendChild(heading);
+
+        results.forEach(function (item) {
+            grid.appendChild(makeExternalCard(item));
+        });
+
+        grid.appendChild(
+            addPlatformSearch(query, "WEBTOON", "webtoons.com")
+        );
+
+        grid.appendChild(
+            addPlatformSearch(query, "MANGA Plus", "mangaplus.shueisha.co.jp")
+        );
+
+        grid.appendChild(
+            addPlatformSearch(query, "BedReads", "bedreads.net")
+        );
+
+        grid.appendChild(
+            addPlatformSearch(query, "Wattpad", "wattpad.com")
+        );
+    }
+
+    /* ---------- Render and search ---------- */
+
+    async function render() {
+        var requestId = ++externalSearchId;
+        var query = search.value.trim();
+
+        if (externalTimer) {
+            clearTimeout(externalTimer);
+            externalTimer = null;
+        }
+
+        grid.innerHTML = "";
+
+        var lowerQuery = query.toLowerCase();
 
         var list = ITEMS.filter(function (item) {
-            var okType =
+            var typeMatches =
                 activeType === "All" || item.type === activeType;
 
-            var okGenre =
+            var genreMatches =
                 activeGenre === "All" || item.genre === activeGenre;
 
             var searchableText = (
@@ -563,35 +829,83 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
                 item.summary
             ).toLowerCase();
 
-            var okText =
-                !query || searchableText.indexOf(query) !== -1;
+            var textMatches =
+                !lowerQuery ||
+                searchableText.indexOf(lowerQuery) !== -1;
 
-            var okSaved =
+            var savedMatches =
                 !onlySaved || saved.indexOf(item.id) !== -1;
 
-            return okType &&
-                okGenre &&
-                okText &&
-                okSaved &&
+            return typeMatches &&
+                genreMatches &&
+                textMatches &&
+                savedMatches &&
                 matchesAudience(item);
         });
-
-        grid.innerHTML = "";
-
-        if (!list.length) {
-            var message = onlySaved
-                ? "No saved titles match your filters. Tap a heart on a card to save a title."
-                : "Nothing matches that search. Try another title or genre.";
-
-            grid.appendChild(el("p", "empty", message));
-            return;
-        }
 
         list.forEach(function (item) {
             grid.appendChild(
                 makeCard(item, ITEMS.indexOf(item))
             );
         });
+
+        if (onlySaved) {
+            if (!list.length) {
+                grid.appendChild(
+                    el("p", "empty", "You have not saved any matching titles.")
+                );
+            }
+            return;
+        }
+
+        if (query.length < 3) {
+            if (!list.length) {
+                grid.appendChild(
+                    el("p", "empty", "Type at least 3 characters to search.")
+                );
+            }
+            return;
+        }
+
+        var status = el(
+            "p",
+            "empty",
+            "Searching external book catalogues..."
+        );
+
+        grid.appendChild(status);
+
+        externalTimer = setTimeout(async function () {
+            try {
+                await searchExternalBooks(query, requestId);
+            } catch (error) {
+                if (requestId !== externalSearchId) return;
+
+                grid.appendChild(
+                    el(
+                        "p",
+                        "empty",
+                        "External search is unavailable right now. Try again later."
+                    )
+                );
+
+                grid.appendChild(
+                    addPlatformSearch(query, "WEBTOON", "webtoons.com")
+                );
+
+                grid.appendChild(
+                    addPlatformSearch(query, "MANGA Plus", "mangaplus.shueisha.co.jp")
+                );
+
+                grid.appendChild(
+                    addPlatformSearch(query, "BedReads", "bedreads.net")
+                );
+            } finally {
+                if (requestId === externalSearchId && status.parentNode) {
+                    status.remove();
+                }
+            }
+        }, 350);
     }
 
     search.addEventListener("input", render);
@@ -611,8 +925,7 @@ if (grid && search && tabBox && audienceBox && genreBox && savedBtn) {
     render();
 } else {
     console.error(
-        "Peerva Library: One or more required HTML elements are missing. " +
-        "Check #stories, #story-search, #tabs, #audience-chips, " +
-        "#chips and #saved-toggle."
+        "Peerva library could not start. Check that these HTML IDs exist: " +
+        "#stories, #story-search, #tabs, #audience-chips, #chips, #saved-toggle."
     );
 }
