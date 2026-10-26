@@ -940,17 +940,22 @@ function renderAnime() {
     details.textContent = "Details";
     details.addEventListener("click", () => showDetails(item));
 
-    const watch = document.createElement("button");
-    watch.className = "button";
-    watch.textContent = LOCAL_VIDEOS[item.id]?.videoUrl ? "▶ Watch" : "View";
+  
+const watch = document.createElement("button");
+watch.className = "button";
+watch.textContent = LOCAL_VIDEOS[item.id]?.videoUrl
+  ? "▶ Watch"
+  : "View";
 
-    watch.addEventListener("click", () => {
-      if (LOCAL_VIDEOS[item.id]?.videoUrl) {
-        playAnime(item);
-      } else {
-        showDetails(item);
-      }
-    });
+watch.addEventListener("click", () => {
+  if (LOCAL_VIDEOS[item.id]?.videoUrl) {
+    playAnime(item);
+  } else {
+    window.location.href =
+      `anime-details.html?id=${encodeURIComponent(item.id)}`;
+  }
+});
+
 
     actions.append(details, watch);
     content.append(title, meta, actions);
