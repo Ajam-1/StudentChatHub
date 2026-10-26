@@ -1,1 +1,725 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111927">
+  <title>Anime Details — Peerva Anime</title>
+  <meta name="description" content="Explore anime details on Peerva Anime.">
+  <link rel="icon" type="image/png" href="images/peerva-icon.png">
+
+  <style>
+    :root {
+      --bg: #0d1522;
+      --panel: #151f30;
+      --panel-light: #1c293b;
+      --text: #e8edf5;
+      --muted: #9aabc2;
+      --accent: #45b9e8;
+      --border: #27354a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button, a { font: inherit; }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; }
+
+    .navbar {
+      min-height: 68px;
+      padding: 0 6%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      background: #131d2c;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -1px;
+    }
+
+    .logo span { color: var(--accent); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .nav-links a:hover { color: var(--accent); }
+
+    .banner {
+      height: 340px;
+      position: relative;
+      background: #202b3d;
+      overflow: hidden;
+    }
+
+    .banner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 30%;
+      display: block;
+    }
+
+    .banner::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        #07101a20,
+        #07101a40 45%,
+        var(--bg)
+      );
+    }
+
+    main {
+      width: min(1240px, 92%);
+      margin: auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 215px minmax(0, 1fr);
+      gap: 30px;
+      margin-top: -125px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .poster-column { min-width: 0; }
+
+    .poster {
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      object-fit: cover;
+      border-radius: 4px;
+      background: var(--panel-light);
+      box-shadow: 0 8px 28px #0006;
+    }
+
+    .poster-buttons {
+      display: grid;
+      gap: 9px;
+      margin-top: 15px;
+    }
+
+    .button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 7px;
+      min-height: 42px;
+      padding: 10px 15px;
+      border: 0;
+      border-radius: 5px;
+      background: var(--accent);
+      color: #08121c;
+      font-weight: 700;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .button:hover { filter: brightness(1.08); }
+
+    .button.secondary {
+      color: var(--text);
+      background: #27364a;
+      border: 1px solid #35465d;
+    }
+
+    .button:disabled {
+      cursor: not-allowed;
+      opacity: .5;
+    }
+
+    .details {
+      padding-top: 130px;
+      min-width: 0;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: clamp(27px, 4vw, 39px);
+      line-height: 1.2;
+      margin: 12px 0 18px;
+    }
+
+    .description {
+      color: #b4c1d2;
+      font-size: 14px;
+      line-height: 1.85;
+      white-space: pre-line;
+    }
+
+    .source {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 25px;
+    }
+
+    .stat {
+      padding: 15px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .stat-label {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 15px;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+
+    .section {
+      margin-top: 35px;
+      padding: 23px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .section h2 {
+      margin: 0 0 18px;
+      font-size: 19px;
+    }
+
+    .genres {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .genre {
+      padding: 8px 12px;
+      border-radius: 20px;
+      border: 1px solid #35465d;
+      background: #202d40;
+      color: #d1dfed;
+      font-size: 12px;
+    }
+
+    .airing-box {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .status {
+      margin-top: 22px;
+      padding: 13px 15px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .status.error {
+      color: #ffb6a5;
+      border-color: #704034;
+    }
+
+    .loading {
+      padding: 70px 15px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .bottom-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 25px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    footer {
+      margin-top: 55px;
+      padding: 28px 5%;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 700px) {
+      .navbar {
+        padding: 15px 4%;
+        flex-wrap: wrap;
+      }
+
+      .nav-links {
+        width: 100%;
+        justify-content: center;
+        padding-bottom: 7px;
+        gap: 20px;
+      }
+
+      .banner { height: 250px; }
+
+      .hero {
+        grid-template-columns: 125px minmax(0, 1fr);
+        gap: 17px;
+        margin-top: -80px;
+      }
+
+      .details { padding-top: 82px; }
+      .description { font-size: 13px; line-height: 1.7; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stat { padding: 12px; }
+      .section { padding: 17px; }
+      .poster-buttons .button { padding: 9px 5px; font-size: 11px; }
+    }
+
+    @media (max-width: 400px) {
+      .hero { grid-template-columns: 100px minmax(0, 1fr); gap: 13px; }
+      .details { padding-top: 80px; }
+      .logo { font-size: 20px; }
+      .nav-links { font-size: 12px; gap: 14px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="navbar">
+    <a class="logo" href="anime.html">PEERVA<span> ANIME</span></a>
+
+    <nav class="nav-links">
+      <a href="anime.html">Explore Anime</a>
+      <a href="anime.html#airing">Airing</a>
+      <a href="index.html">Peerva Home</a>
+    </nav>
+  </header>
+
+  <div class="banner" id="banner">
+    <img id="bannerImage" alt="" hidden>
+  </div>
+
+  <main>
+    <div id="loading" class="loading">Loading anime details from AniList…</div>
+
+    <div id="pageContent" hidden>
+      <section class="hero">
+        <aside class="poster-column">
+          <img id="poster" class="poster" alt="Anime poster">
+
+          <div class="poster-buttons">
+            <button id="watchButton" class="button" type="button">
+              ▶ Watch on Peerva
+            </button>
+
+            <a id="anilistButton" class="button secondary"
+               href="https://anilist.co/" target="_blank"
+               rel="noopener noreferrer">
+              View on AniList ↗
+            </a>
+          </div>
+        </aside>
+
+        <div class="details">
+          <div class="eyebrow">Peerva Anime · Anime details</div>
+          <h1 id="animeTitle">Anime</h1>
+
+          <div id="description" class="description"></div>
+          <p class="source">Anime information and artwork provided by AniList.</p>
+
+          <div class="stats">
+            <div class="stat">
+              <span class="stat-label">Average score</span>
+              <span class="stat-value" id="score">—</span>
+            </div>
+
+            <div class="stat">
+              <span class="stat-label">Format</span>
+              <span class="stat-value" id="format">—</span>
+            </div>
+
+            <div class="stat">
+              <span class="stat-label">Episodes</span>
+              <span class="stat-value" id="episodes">—</span>
+            </div>
+
+            <div class="stat">
+              <span class="stat-label">Release year</span>
+              <span class="stat-value" id="year">—</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Genres</h2>
+        <div id="genres" class="genres"></div>
+      </section>
+
+      <section class="section">
+        <h2>Anime information</h2>
+        <div class="airing-box" id="information"></div>
+      </section>
+
+      <section class="section">
+        <h2>Next episode</h2>
+        <div class="airing-box" id="nextEpisode"></div>
+      </section>
+
+      <section class="section">
+        <h2>Watch anime</h2>
+        <p class="description">
+          Peerva uses AniList for anime information. Actual episodes must be
+          hosted separately and must be videos you are authorised to stream.
+        </p>
+
+        <div class="action-row">
+          <button id="watchAgainButton" class="button" type="button">
+            ▶ Open video player
+          </button>
+          <a id="officialLink" class="button secondary"
+             href="https://anilist.co/" target="_blank"
+             rel="noopener noreferrer">
+            More information ↗
+          </a>
+        </div>
+
+        <div id="watchStatus" class="status" role="status">
+          No video has been connected yet.
+        </div>
+
+        <div id="videoArea" hidden>
+          <video id="videoPlayer" controls playsinline
+                 preload="metadata"
+                 style="width:100%;max-height:600px;background:#000;border-radius:8px;margin-top:18px">
+            Your browser does not support video playback.
+          </video>
+
+          <p>
+            <a id="downloadLink" class="button" href="#" download hidden>
+              ↓ Download authorised episode
+            </a>
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <div id="errorBox" class="status error" hidden>
+      Could not load this anime. Please return to the catalogue and try again.
+    </div>
+
+    <div class="bottom-links">
+      <a href="anime.html">← Back to anime catalogue</a>
+      <a href="index.html">Back to Peerva</a>
+    </div>
+  </main>
+
+  <footer>
+    <strong>PEERVA ANIME</strong><br>
+    Discover anime and follow releases.<br>
+    Anime metadata provided by AniList.
+  </footer>
+
+  <script>
+    const API = "https://graphql.anilist.co";
+
+    // Connect your own authorised videos here using the AniList anime ID.
+    const LOCAL_VIDEOS = {
+      /*
+      "97940": {
+        videoUrl: "https://your-host.example/episode-1.mp4",
+        downloadUrl: "https://your-host.example/episode-1.mp4",
+        episode: "Episode 1"
+      }
+      */
+    };
+
+    const $ = id => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    const animeId = Number(params.get("id"));
+
+    function showError(message) {
+      $("loading").hidden = true;
+      $("errorBox").hidden = false;
+      $("errorBox").textContent = message;
+    }
+
+    function safeText(value, fallback = "Not available") {
+      return value === null || value === undefined || value === ""
+        ? fallback
+        : String(value);
+    }
+
+    function dateText(timestamp) {
+      if (!timestamp) return "No episode currently scheduled";
+
+      return new Date(timestamp * 1000).toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short"
+      });
+    }
+
+    async function fetchAnime() {
+      if (!Number.isInteger(animeId) || animeId < 1) {
+        throw new Error("No valid anime ID was provided in the page URL.");
+      }
+
+      const query = `
+        query ($id: Int) {
+          Media(id: $id, type: ANIME) {
+            id
+            title { english romaji native }
+            description(asHtml: false)
+            coverImage { extraLarge large }
+            bannerImage
+            genres
+            averageScore
+            format
+            episodes
+            status
+            season
+            seasonYear
+            startDate { year month day }
+            endDate { year month day }
+            duration
+            source
+            siteUrl
+            studios(isMain: true) {
+              nodes { name }
+            }
+            nextAiringEpisode {
+              episode
+              airingAt
+              timeUntilAiring
+            }
+          }
+        }
+      `;
+
+      let response;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          response = await fetch(API, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              query,
+              variables: { id: animeId }
+            })
+          });
+
+          if (response.ok) break;
+
+          if (response.status !== 429 && response.status < 500) {
+            throw new Error(`AniList returned HTTP ${response.status}.`);
+          }
+
+          if (attempt === 2) {
+            throw new Error(`AniList returned HTTP ${response.status}.`);
+          }
+        } catch (error) {
+          if (attempt === 2 || error.message.startsWith("AniList returned HTTP 4")) {
+            throw error;
+          }
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 800 * (attempt + 1)));
+      }
+
+      const result = await response.json();
+
+      if (result.errors?.length) {
+        throw new Error(result.errors.map(e => e.message).join("; "));
+      }
+
+      const anime = result.data?.Media;
+
+      if (!anime || anime.isAdult) {
+        throw new Error("This anime could not be found.");
+      }
+
+      return anime;
+    }
+
+    function renderAnime(anime) {
+      const title = anime.title?.english ||
+                    anime.title?.romaji ||
+                    "Untitled Anime";
+
+      document.title = `${title} — Peerva Anime`;
+      $("animeTitle").textContent = title;
+
+      const poster = anime.coverImage?.extraLarge ||
+                     anime.coverImage?.large;
+
+      if (poster) {
+        $("poster").src = poster;
+        $("poster").alt = `${title} poster`;
+      } else {
+        $("poster").hidden = true;
+      }
+
+      if (anime.bannerImage) {
+        $("bannerImage").src = anime.bannerImage;
+        $("bannerImage").alt = "";
+        $("bannerImage").hidden = false;
+      }
+
+      $("description").textContent =
+        anime.description || "No synopsis is available for this anime.";
+
+      $("score").textContent = anime.averageScore
+        ? `${anime.averageScore}%`
+        : "Not rated";
+
+      $("format").textContent = safeText(anime.format);
+      $("episodes").textContent = safeText(anime.episodes);
+      $("year").textContent = safeText(anime.seasonYear);
+
+      const genres = $("genres");
+      genres.replaceChildren();
+
+      if (anime.genres?.length) {
+        anime.genres.forEach(genre => {
+          const tag = document.createElement("span");
+          tag.className = "genre";
+          tag.textContent = genre;
+          genres.appendChild(tag);
+        });
+      } else {
+        genres.textContent = "No genres listed.";
+      }
+
+      const studios = anime.studios?.nodes?.map(s => s.name).join(", ");
+
+      $("information").textContent = [
+        `Status: ${safeText(anime.status)}`,
+        `Season: ${safeText(anime.season)}`,
+        `Source: ${safeText(anime.source)}`,
+        `Episode duration: ${anime.duration ? anime.duration + " minutes" : "Not available"}`,
+        `Studio: ${studios || "Not listed"}`,
+        `Start date: ${anime.startDate?.year
+          ? [anime.startDate.year, anime.startDate.month, anime.startDate.day]
+              .filter(Boolean).join("-")
+          : "Not available"}`,
+        `End date: ${anime.endDate?.year
+          ? [anime.endDate.year, anime.endDate.month, anime.endDate.day]
+              .filter(Boolean).join("-")
+          : "Not available"}`
+      ].join("\n");
+
+      const next = anime.nextAiringEpisode;
+
+      $("nextEpisode").textContent = next
+        ? `Episode ${next.episode} is scheduled for ${dateText(next.airingAt)}.`
+        : "AniList has no upcoming episode listed for this anime.";
+
+      $("anilistButton").href = anime.siteUrl || "https://anilist.co/";
+      $("officialLink").href = anime.siteUrl || "https://anilist.co/";
+
+      const local = LOCAL_VIDEOS[String(anime.id)];
+      const hasVideo = Boolean(local?.videoUrl);
+
+      $("watchButton").disabled = !hasVideo;
+      $("watchAgainButton").disabled = !hasVideo;
+
+      $("watchStatus").textContent = hasVideo
+        ? `Available on Peerva: ${local.episode || "Connected episode"}.`
+        : "No authorised episode has been connected to this anime yet.";
+
+      function openPlayer() {
+        if (!local?.videoUrl) return;
+
+        $("videoArea").hidden = false;
+
+        const video = $("videoPlayer");
+        video.src = local.videoUrl;
+        video.load();
+
+        if (local.downloadUrl) {
+          $("downloadLink").href = local.downloadUrl;
+          $("downloadLink").hidden = false;
+        } else {
+          $("downloadLink").hidden = true;
+        }
+
+        $("videoArea").scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }
+
+      $("watchButton").addEventListener("click", openPlayer);
+      $("watchAgainButton").addEventListener("click", openPlayer);
+
+      $("loading").hidden = true;
+      $("pageContent").hidden = false;
+    }
+
+    async function start() {
+      try {
+        const anime = await fetchAnime();
+        renderAnime(anime);
+      } catch (error) {
+        console.error("Peerva anime details error:", error);
+        showError(
+          `${error.message} Use the Back to anime catalogue link to try another anime.`
+        );
+      }
+    }
+
+    start();
+  </script>
+</body>
+</html>
+
