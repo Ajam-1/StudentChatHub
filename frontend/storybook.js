@@ -1,38 +1,13 @@
-
 /* =========================================================
    PEERVA STORYBOOK — On-site Books, Novels, Manga & Comics
    Replace the entire existing storybook.js with this file.
-   Existing HTML controls are reused where available.
+
+   What's new in this version
+   1. Manga & comics open as IMAGE pages (never plain text).
+   2. PDFs are rendered inside the reader with PDF.js (canvas pages).
+   3. The first 1000 catalogue books load automatically and each one
+      has a reading fallback chain, so they open reliably.
    ========================================================= */
-
-/* ---------- Required Storybook setup ---------- */
-var SAVE_KEY = "chathub-saved-stories";
-
-var COLORS = [
-    "#7357D9", "#D9688B", "#397C83",
-    "#C17A42", "#5C6BC0", "#56865A"
-];
-
-var grid = document.getElementById("stories");
-var search = document.getElementById("story-search");
-var tabBox = document.getElementById("tabs");
-var audienceBox = document.getElementById("audience-chips");
-var genreBox = document.getElementById("chips");
-var savedBtn = document.getElementById("saved-toggle");
-
-if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
-    console.error(
-        "Peerva Storybook could not start. Check the HTML IDs:",
-        {
-            grid: !!grid,
-            search: !!search,
-            tabs: !!tabBox,
-            audience: !!audienceBox,
-            genres: !!genreBox,
-            savedButton: !!savedBtn
-        }
-    );
-}
 
 (function () {
   "use strict";
@@ -41,13 +16,22 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
   var PROGRESS_KEY = "peerva-story-progress-v2";
   var SETTINGS_KEY = "peerva-reader-settings";
 
+  var PDFJS_VERSION = "3.11.174";
+  var PDFJS_SRC = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/" + PDFJS_VERSION + "/pdf.min.js";
+  var PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/" + PDFJS_VERSION + "/pdf.worker.min.js";
+
   var ITEMS = [];
   var SEARCH_RESULTS = [];
-  var GUTENBERG_PAGE = 1;
+  var GUTENBERG_NEXT = "";
+  var GUTENBERG_COUNT = 0;
   var GUTENBERG_LOADING = false;
   var GUTENBERG_DONE = false;
   var GUTENBERG_TARGET = 1000;
+  var MANGA_LOADED = false;
   var SEARCH_ID = 0;
+  var PAGE_SIZE = 60;
+  var visibleCount = PAGE_SIZE;
+
   var activeType = "All";
   var activeAudience = "All";
   var activeGenre = "All";
@@ -56,6 +40,9 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
   var readerItem = null;
   var readerChapterIndex = 0;
   var currentSearch = "";
+  var escapeHandler = null;
+  var pdfJsPromise = null;
+
   var saved = readJSON(SAVE_KEY, []);
   var progress = readJSON(PROGRESS_KEY, {});
   var readerSettings = readJSON(SETTINGS_KEY, {
@@ -69,8 +56,17 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     "#52698B", "#9B7A45", "#526C82", "#8A5C68"
   ];
 
+  /* Add creator-approved titles here.
+     Manga/comic chapter format:
+       chapters: [{ title: "Chapter 1", pages: ["img1.jpg", "img2.jpg"] }]
+     or a PDF chapter:
+       chapters: [{ title: "Chapter 1", pdf: "https://.../chapter1.pdf" }]
+     Story format:
+       chapters: [{ title: "Chapter 1", body: "Text..." }]                */
   var LICENSED_STORIES = [];
   var LICENSED_MANGA = [];
+
+  /* -------------------- Helpers -------------------- */
 
   function readJSON(key, fallback) {
     try {
@@ -92,9 +88,7 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
   function el(tag, className, text) {
     var node = document.createElement(tag);
     if (className) node.className = className;
-    if (text !== undefined && text !== null) {
-      node.textContent = String(text);
-    }
+    if (text !== undefined && text !== null) node.textContent = String(text);
     return node;
   }
 
@@ -106,6 +100,46 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     return null;
   }
 
+  function debounce(callback, delay) {
+    var timer;
+    return function () {
+      var args = arguments;
+      clearTimeout(timer);
+      timer = setTimeout(function () { callback.apply(null, args); }, delay);
+    };
+  }
+
+  function fetchWithTimeout(url, ms) {
+    var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, ms || 15000) : null;
+    return fetch(url, controller ? { signal: controller.signal } : undefined)
+      .then(function (response) {
+        if (timer) clearTimeout(timer);
+        return response;
+      })
+      .catch(function (error) {
+        if (timer) clearTimeout(timer);
+        throw error;
+      });
+  }
+
+  function fetchJSONRetry(url, tries) {
+    return fetchWithTimeout(url, 20000)
+      .then(function (response) {
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
+      })
+      .catch(function (error) {
+        if (tries > 1) {
+          return new Promise(function (resolve) { setTimeout(resolve, 1200); })
+            .then(function () { return fetchJSONRetry(url, tries - 1); });
+        }
+        throw error;
+      });
+  }
+
+  /* -------------------- Page elements -------------------- */
+
   var grid = findElement(["stories", "story-grid", "story-list"]);
   var search = findElement(["story-search", "search"]);
   var tabBox = findElement(["tabs", "story-tabs"]);
@@ -114,7 +148,7 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
   var savedBtn = findElement(["saved-toggle", "show-saved"]);
 
   if (!grid) {
-    console.error("Peerva Storybook: cannot find the story grid.");
+    console.error("Peerva Storybook: cannot find the story grid (id=\"stories\").");
     return;
   }
 
@@ -135,14 +169,11 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
   function makeButtons(box, values, current, callback, className) {
     if (!box) return;
     box.innerHTML = "";
-
     values.forEach(function (value) {
       var button = el("button", className || "", value);
       button.type = "button";
       button.setAttribute("aria-pressed", value === current ? "true" : "false");
-      button.addEventListener("click", function () {
-        callback(value);
-      });
+      button.addEventListener("click", function () { callback(value); });
       box.appendChild(button);
     });
   }
@@ -151,8 +182,11 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     makeButtons(tabBox, ["All", "Story", "Manga"], activeType, function (value) {
       activeType = value;
       activeGenre = "All";
+      visibleCount = PAGE_SIZE;
       buildControls();
       render();
+      if (value === "Manga") loadManga();
+      if (currentSearch) searchOnline(currentSearch);
     }, "tab");
 
     if (tabBox) {
@@ -164,22 +198,22 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
 
     makeButtons(audienceBox, ["All", "Teens", "Adults"], activeAudience, function (value) {
       activeAudience = value;
+      visibleCount = PAGE_SIZE;
       buildControls();
       render();
     }, "chip");
 
     var genres = ["All"];
     allItems().forEach(function (item) {
-      if (
-        (activeType === "All" || item.type === activeType) &&
-        genres.indexOf(item.genre) === -1
-      ) {
+      if ((activeType === "All" || item.type === activeType) &&
+          genres.indexOf(item.genre) === -1) {
         genres.push(item.genre);
       }
     });
 
     makeButtons(genreBox, genres, activeGenre, function (value) {
       activeGenre = value;
+      visibleCount = PAGE_SIZE;
       buildControls();
       render();
     }, "chip");
@@ -187,13 +221,11 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
 
   function allItems() {
     var result = ITEMS.slice();
-
     SEARCH_RESULTS.forEach(function (item) {
       if (!result.some(function (existing) { return existing.id === item.id; })) {
         result.push(item);
       }
     });
-
     return result;
   }
 
@@ -223,7 +255,6 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     } else {
       cover.classList.add("no-image");
       cover.style.backgroundColor = COLORS[index % COLORS.length];
-
       var coverText = el("div", "cover-text");
       coverText.appendChild(el("span", "cover-title", item.title));
       cover.appendChild(coverText);
@@ -235,10 +266,7 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     heart.setAttribute("aria-pressed", saved.indexOf(item.id) >= 0 ? "true" : "false");
     heart.appendChild(heartIcon());
     heart.addEventListener("click", function () {
-      var position = saved.indexOf(item.id);
-      if (position < 0) saved.push(item.id);
-      else saved.splice(position, 1);
-      saveJSON(SAVE_KEY, saved);
+      toggleSaved(item.id);
       render();
     });
     cover.appendChild(heart);
@@ -253,20 +281,18 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     if (item.provider === "internetarchive") {
       badges.appendChild(el("span", "badge plain", "Internet Archive"));
     } else if (item.provider === "gutendex") {
-      badges.appendChild(el("span", "badge plain", "Public-domain candidate"));
+      badges.appendChild(el("span", "badge plain", "Public domain"));
     } else if (item.rights) {
       badges.appendChild(el("span", "badge plain", item.rights));
     }
 
     body.appendChild(badges);
-    body.appendChild(el("p", "story-summary", item.summary || "Open this title to see its available reading format."));
+    body.appendChild(el("p", "story-summary", item.summary || "Open this title to read it on Peerva."));
     body.appendChild(el("span", "story-source", "Source: " + (item.source || "Peerva library")));
 
     var read = el("button", "read-btn", "Read on Peerva");
     read.type = "button";
-    read.addEventListener("click", function () {
-      openReader(item);
-    });
+    read.addEventListener("click", function () { openReader(item); });
     body.appendChild(read);
 
     card.appendChild(cover);
@@ -274,13 +300,34 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     return card;
   }
 
+  function toggleSaved(id) {
+    var position = saved.indexOf(id);
+    if (position < 0) saved.push(id);
+    else saved.splice(position, 1);
+    saveJSON(SAVE_KEY, saved);
+    return position < 0;
+  }
+
+  var moreBtn = null;
+
+  function getMoreButton() {
+    if (moreBtn) return moreBtn;
+    moreBtn = el("button", "read-btn", "Show more books");
+    moreBtn.type = "button";
+    moreBtn.style.cssText = "display:none;margin:20px auto;padding:12px 20px;cursor:pointer;";
+    moreBtn.addEventListener("click", function () {
+      visibleCount += PAGE_SIZE;
+      render();
+    });
+    if (grid.parentNode) grid.parentNode.insertBefore(moreBtn, grid.nextSibling);
+    return moreBtn;
+  }
+
   function render() {
     var query = (search.value || "").trim().toLowerCase();
     var list = allItems().filter(function (item) {
-      var text = [
-        item.title, item.author, item.genre, item.summary,
-        item.titleKo, item.source
-      ].join(" ").toLowerCase();
+      var text = [item.title, item.author, item.genre, item.summary, item.titleKo, item.source]
+        .join(" ").toLowerCase();
 
       return (
         (activeType === "All" || item.type === activeType) &&
@@ -292,8 +339,11 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     });
 
     grid.innerHTML = "";
+    var more = getMoreButton();
 
     if (!list.length) {
+      more.style.display = "none";
+      var loading = GUTENBERG_LOADING || (activeType === "Manga" && !MANGA_LOADED);
       grid.appendChild(el(
         "p",
         "empty",
@@ -301,18 +351,31 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
           ? "No saved books match these filters yet."
           : query
             ? "No matching books yet. Peerva is searching the online catalogues as you type."
-            : "Books will appear here as the catalogue loads."
+            : loading
+              ? "Loading the library…"
+              : "Nothing here yet."
       ));
       return;
     }
 
-    list.forEach(function (item, index) {
-      grid.appendChild(makeCard(item, index));
+    var shown = list.slice(0, visibleCount);
+    var fragment = document.createDocumentFragment();
+    shown.forEach(function (item, index) {
+      fragment.appendChild(makeCard(item, index));
     });
+    grid.appendChild(fragment);
+
+    if (list.length > shown.length) {
+      more.textContent = "Show more (" + shown.length + " of " + list.length + ")";
+      more.style.display = "block";
+    } else {
+      more.style.display = "none";
+    }
   }
 
   search.addEventListener("input", debounce(function () {
     currentSearch = search.value.trim();
+    visibleCount = PAGE_SIZE;
     render();
     searchOnline(currentSearch);
   }, 450));
@@ -320,37 +383,23 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
   if (savedBtn) {
     savedBtn.addEventListener("click", function () {
       onlySaved = !onlySaved;
+      visibleCount = PAGE_SIZE;
       savedBtn.setAttribute("aria-pressed", onlySaved ? "true" : "false");
       render();
     });
   }
 
-  function debounce(callback, delay) {
-    var timer;
-    return function () {
-      var args = arguments;
-      clearTimeout(timer);
-      timer = setTimeout(function () {
-        callback.apply(null, args);
-      }, delay);
-    };
-  }
-
-  /* -------------------- Online book discovery --------------------
-     Internet Archive Advanced Search returns catalogue metadata.
-     Gutendex supplies English public-domain candidate metadata.
-     Search results are not automatically proof of redistribution rights.
-  ---------------------------------------------------------------- */
+  /* -------------------- Online book discovery -------------------- */
 
   function genreFromText(value) {
     var text = String(value || "").toLowerCase();
+    if (/manga|comic|graphic novel/.test(text)) return "Manga & Comics";
     if (/fantasy|magic|fairy|myth/.test(text)) return "Fantasy";
     if (/romance|love story|marriage/.test(text)) return "Romance";
     if (/mystery|detective|crime|suspense/.test(text)) return "Mystery";
     if (/horror|ghost|gothic/.test(text)) return "Horror";
     if (/science fiction|sci-fi|space/.test(text)) return "Science Fiction";
     if (/adventure|journey|travel/.test(text)) return "Adventure";
-    if (/manga|comic|graphic novel/.test(text)) return "Manga & Comics";
     return "Classics";
   }
 
@@ -377,119 +426,164 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     SEARCH_RESULTS = [];
 
     if (!query || query.length < 2) {
+      buildControls();
       render();
       return;
     }
 
-    grid.innerHTML = "";
-    grid.appendChild(el("p", "empty", "Searching Peerva, Internet Archive and English book catalogues…"));
+    var mangaOnly = activeType === "Manga";
+    var jobs = [searchInternetArchive(query, mangaOnly)];
+    if (!mangaOnly) jobs.push(searchGutenberg(query));
 
-    Promise.allSettled([
-      searchInternetArchive(query),
-      searchGutenberg(query)
-    ]).then(function (results) {
+    Promise.allSettled(jobs).then(function (results) {
       if (requestId !== SEARCH_ID) return;
-
       results.forEach(function (result) {
         if (result.status === "fulfilled") addSearchResults(result.value);
       });
-
-      if (!SEARCH_RESULTS.length) {
-        grid.innerHTML = "";
-        grid.appendChild(el("p", "empty", "No results found. Try another title or author."));
-      }
+      if (!SEARCH_RESULTS.length) render();
     });
   }
 
-  function searchInternetArchive(query) {
+  function cleanArchiveQuery(text) {
+    return String(text).replace(/["\\():\[\]{}^~*?!+\-\/]/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function archiveSearch(q, rows, sortByDownloads) {
     var url = new URL("https://archive.org/advancedsearch.php");
-    url.searchParams.set("q", 'title:("' + query.replace(/["\\]/g, " ") + '") AND mediatype:texts AND language:eng');
-    url.searchParams.append("fl[]", "identifier");
-    url.searchParams.append("fl[]", "title");
-    url.searchParams.append("fl[]", "creator");
-    url.searchParams.append("fl[]", "description");
-    url.searchParams.append("fl[]", "subject");
-    url.searchParams.append("fl[]", "year");
-    url.searchParams.append("fl[]", "language");
-    url.searchParams.set("rows", "30");
+    url.searchParams.set("q", q);
+    ["identifier", "title", "creator", "description", "subject", "year", "language", "imagecount"]
+      .forEach(function (field) { url.searchParams.append("fl[]", field); });
+    if (sortByDownloads) url.searchParams.append("sort[]", "downloads desc");
+    url.searchParams.set("rows", String(rows));
     url.searchParams.set("page", "1");
     url.searchParams.set("output", "json");
 
-    return fetch(url.toString())
-      .then(function (response) {
-        if (!response.ok) throw new Error("Internet Archive search failed");
-        return response.json();
-      })
-      .then(function (data) {
-        return ((data.response && data.response.docs) || []).map(function (book) {
-          var title = book.title || "Untitled book";
-          var subjectText = Array.isArray(book.subject) ? book.subject.join(", ") : (book.subject || "");
-          var description = Array.isArray(book.description) ? book.description.join(" ") : (book.description || "");
+    return fetchJSONRetry(url.toString(), 2).then(function (data) {
+      return (data.response && data.response.docs) || [];
+    });
+  }
 
-          return {
-            id: "ia-" + book.identifier,
-            provider: "internetarchive",
-            archiveId: book.identifier,
-            title: title,
-            author: Array.isArray(book.creator) ? book.creator.join(", ") : (book.creator || "Unknown author"),
-            type: isMangaTitle(title, subjectText) ? "Manga" : "Story",
-            genre: genreFromText(title + " " + subjectText + " " + description),
-            audience: "Teens & Adults",
-            lang: "English",
-            rights: "Check item access and rights",
-            summary: String(description).replace(/<[^>]*>/g, "").slice(0, 350) ||
-              "Book record found in Internet Archive. Available formats depend on this item's access and files.",
-            source: "Internet Archive",
-            cover: "https://archive.org/services/img/" + encodeURIComponent(book.identifier),
-            chapters: []
-          };
+  function normalizeArchiveDoc(book, forceManga) {
+    var title = book.title || "Untitled book";
+    if (Array.isArray(title)) title = title[0];
+    var subjectText = Array.isArray(book.subject) ? book.subject.join(", ") : (book.subject || "");
+    var description = Array.isArray(book.description) ? book.description.join(" ") : (book.description || "");
+    var isManga = forceManga || isMangaTitle(title, subjectText);
+
+    return {
+      id: "ia-" + book.identifier,
+      provider: "internetarchive",
+      archiveId: book.identifier,
+      title: title,
+      author: Array.isArray(book.creator) ? book.creator.join(", ") : (book.creator || "Unknown author"),
+      type: isManga ? "Manga" : "Story",
+      genre: isManga ? "Manga & Comics" : genreFromText(title + " " + subjectText + " " + description),
+      audience: "Teens & Adults",
+      lang: "English",
+      rights: "Check item access and rights",
+      imageCount: parseInt(book.imagecount, 10) || 0,
+      summary: String(description).replace(/<[^>]*>/g, "").slice(0, 350) ||
+        "Record from the Internet Archive. Opens as page images or a PDF inside Peerva.",
+      source: "Internet Archive",
+      cover: "https://archive.org/services/img/" + encodeURIComponent(book.identifier),
+      chapters: []
+    };
+  }
+
+  var ARCHIVE_OPEN = " AND mediatype:texts AND language:eng AND -access-restricted-item:true";
+  var ARCHIVE_MANGA = '(subject:manga OR subject:comics OR subject:"comic books" OR subject:"graphic novels")';
+
+  function searchInternetArchive(query, mangaOnly) {
+    var words = cleanArchiveQuery(query);
+    if (!words) return Promise.resolve([]);
+
+    var q = "(title:(" + words + ") OR creator:(" + words + "))" + ARCHIVE_OPEN;
+    if (mangaOnly) q += " AND " + ARCHIVE_MANGA;
+
+    return archiveSearch(q, 30, true).then(function (docs) {
+      return docs.map(function (doc) { return normalizeArchiveDoc(doc, mangaOnly); });
+    });
+  }
+
+  /* Preload manga & comics so the Manga tab is never empty. */
+  function loadManga() {
+    if (MANGA_LOADED) return;
+    MANGA_LOADED = true;
+
+    archiveSearch(ARCHIVE_MANGA + ARCHIVE_OPEN, 100, true)
+      .then(function (docs) {
+        docs.forEach(function (doc) {
+          var item = normalizeArchiveDoc(doc, true);
+          if (!ITEMS.some(function (x) { return x.id === item.id; })) ITEMS.push(item);
         });
+        buildControls();
+        render();
+      })
+      .catch(function (error) {
+        MANGA_LOADED = false;
+        console.warn("Peerva manga catalogue failed:", error);
       });
   }
 
   function searchGutenberg(query) {
     var url = "https://gutendex.com/books/?search=" + encodeURIComponent(query) + "&languages=en";
-    return fetch(url)
-      .then(function (response) {
-        if (!response.ok) throw new Error("English book search failed");
-        return response.json();
-      })
-      .then(function (data) {
-        return (data.results || []).map(normalizeGutenbergBook).filter(Boolean);
-      });
+    return fetchJSONRetry(url, 2).then(function (data) {
+      return (data.results || []).map(normalizeGutenbergBook).filter(Boolean);
+    });
+  }
+
+  function pickFormat(formats, prefix) {
+    var keys = Object.keys(formats || {});
+    var utf = keys.filter(function (k) { return k.indexOf(prefix) === 0 && /utf-8/i.test(k); })[0];
+    var any = keys.filter(function (k) { return k.indexOf(prefix) === 0; })[0];
+    var key = utf || any;
+    return key ? formats[key] : "";
   }
 
   function normalizeGutenbergBook(book) {
+    if (!book || !book.id) return null;
     var formats = book.formats || {};
-    var textUrl =
-      formats["text/plain; charset=utf-8"] ||
-      formats["text/plain"] ||
-      formats["text/plain; charset=us-ascii"];
+    var id = book.id;
 
-    var author = (book.authors || []).map(function (a) {
-      return a.name;
-    }).filter(Boolean).join(", ") || "Unknown author";
+    var textUrls = [];
+    var textUrl = pickFormat(formats, "text/plain");
+    if (textUrl) textUrls.push(textUrl.replace(/^http:/, "https:"));
+    textUrls.push("https://www.gutenberg.org/cache/epub/" + id + "/pg" + id + ".txt");
+    textUrls.push("https://www.gutenberg.org/ebooks/" + id + ".txt.utf-8");
+
+    var htmlUrl = pickFormat(formats, "text/html");
+    htmlUrl = htmlUrl
+      ? htmlUrl.replace(/^http:/, "https:")
+      : "https://www.gutenberg.org/cache/epub/" + id + "/pg" + id + "-images.html";
+
+    var author = (book.authors || []).map(function (a) { return a.name; })
+      .filter(Boolean).join(", ") || "Unknown author";
+
+    var subjects = (book.subjects || []).concat(book.bookshelves || []).join(" ");
 
     return {
-      id: "gutenberg-" + book.id,
+      id: "gutenberg-" + id,
       provider: "gutendex",
-      gutenbergId: book.id,
+      gutenbergId: id,
       type: "Story",
       title: book.title || "Untitled book",
       author: author,
-      genre: genreFromText((book.subjects || []).join(" ")),
+      genre: genreFromText(subjects),
       audience: "Teens & Adults",
       lang: "English",
-      rights: "Public-domain candidate — verify rights",
-      summary: "English-language book. Its full text can be loaded into Peerva's reader when the text file is accessible.",
-      source: "Project Gutenberg catalogue",
+      rights: "Public domain",
+      summary: (book.subjects && book.subjects.length)
+        ? "Subjects: " + book.subjects.slice(0, 3).join("; ")
+        : "Classic English-language book from Project Gutenberg.",
+      source: "Project Gutenberg",
       cover: formats["image/jpeg"] || "",
-      downloadUrl: textUrl || "",
+      textUrls: textUrls,
+      htmlUrl: htmlUrl,
       chapters: [{ title: "Full book", body: "" }]
     };
   }
 
-  /* -------------------- Reader design -------------------- */
+  /* -------------------- Reader styles -------------------- */
 
   function injectLibraryStyles() {
     if (document.getElementById("peerva-reader-styles")) return;
@@ -555,6 +649,7 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
         line-height:1.85; overflow-wrap:anywhere;
       }
       .peerva-reader-content p { margin:0 0 1.35em; }
+      .peerva-reader-content.is-visual { max-width:900px; font-family:inherit; }
       .peerva-reader-progress {
         height:3px; background:rgba(120,110,90,.18);
         position:sticky; top:55px; z-index:4;
@@ -570,26 +665,32 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
       .peerva-reader-controls button:disabled { opacity:.35; cursor:not-allowed; }
       .peerva-reader-note {
         max-width:690px; margin:18px auto; color:var(--reader-muted);
-        font-size:13px; line-height:1.6;
+        font-size:13px; line-height:1.6; font-family:inherit;
       }
       .peerva-reader-frame {
         width:100%; height:calc(100vh - 220px); min-height:420px;
         border:0; border-radius:8px; background:white;
       }
-      .peerva-manga-pages {
-        max-width:850px; margin:0 auto; display:flex;
-        flex-direction:column; align-items:center; gap:0;
+      .peerva-manga-pages, .peerva-pdf-pages {
+        max-width:900px; margin:0 auto; display:flex;
+        flex-direction:column; align-items:center; gap:6px;
       }
       .peerva-manga-pages img {
         display:block; max-width:100%; width:auto; height:auto;
-        object-fit:contain; margin:0 auto;
+        object-fit:contain; margin:0 auto; background:#e8e4dc;
+        min-height:240px;
       }
+      .peerva-pdf-page {
+        width:100%; background:#fff; box-shadow:0 1px 6px rgba(0,0,0,.18);
+        position:relative;
+      }
+      .peerva-pdf-page canvas { display:block; width:100%; height:auto; }
       .peerva-reader-error {
         border:1px solid rgba(180,80,60,.4); padding:16px;
-        border-radius:12px; line-height:1.6;
+        border-radius:12px; line-height:1.6; font-family:inherit;
       }
       @media(max-width:600px) {
-        .peerva-reader-panel { padding:0 16px 28px; }
+        .peerva-reader-panel { padding:0 10px 28px; }
         .peerva-reader-top { padding:10px 0; }
         .peerva-reader-heading { margin:22px auto; }
         .peerva-reader-toolbar { gap:6px; }
@@ -601,6 +702,8 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     document.head.appendChild(style);
   }
 
+  /* -------------------- Reader shell -------------------- */
+
   function closeReader() {
     if (readerOverlay && readerOverlay.parentNode) {
       readerOverlay.parentNode.removeChild(readerOverlay);
@@ -608,6 +711,10 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     readerOverlay = null;
     readerItem = null;
     document.body.style.overflow = "";
+    if (escapeHandler) {
+      document.removeEventListener("keydown", escapeHandler);
+      escapeHandler = null;
+    }
   }
 
   function readerButton(label, callback, title) {
@@ -618,13 +725,15 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     return button;
   }
 
-  function openReader(item, chapterIndex) {
-    readerItem = item;
-    readerChapterIndex = typeof chapterIndex === "number"
-      ? chapterIndex
-      : (progress[item.id] || 0);
+  function isVisualItem(item) {
+    return item.type === "Manga";
+  }
 
+  function openReader(item, chapterIndex) {
     if (readerOverlay) closeReader();
+
+    readerItem = item;
+    readerChapterIndex = typeof chapterIndex === "number" ? chapterIndex : (progress[item.id] || 0);
 
     readerOverlay = el("div", "peerva-reader-overlay");
     readerOverlay.setAttribute("role", "dialog");
@@ -648,16 +757,19 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     panel.appendChild(heading);
 
     var toolbar = el("div", "peerva-reader-toolbar");
-    toolbar.appendChild(readerButton("A−", function () {
-      readerSettings.fontSize = Math.max(14, Number(readerSettings.fontSize) - 1);
-      saveJSON(SETTINGS_KEY, readerSettings);
-      applyReaderSettings(panel);
-    }, "Decrease font size"));
-    toolbar.appendChild(readerButton("A+", function () {
-      readerSettings.fontSize = Math.min(32, Number(readerSettings.fontSize) + 1);
-      saveJSON(SETTINGS_KEY, readerSettings);
-      applyReaderSettings(panel);
-    }, "Increase font size"));
+
+    if (!isVisualItem(item)) {
+      toolbar.appendChild(readerButton("A−", function () {
+        readerSettings.fontSize = Math.max(14, Number(readerSettings.fontSize) - 1);
+        saveJSON(SETTINGS_KEY, readerSettings);
+        applyReaderSettings(panel);
+      }, "Decrease font size"));
+      toolbar.appendChild(readerButton("A+", function () {
+        readerSettings.fontSize = Math.min(32, Number(readerSettings.fontSize) + 1);
+        saveJSON(SETTINGS_KEY, readerSettings);
+        applyReaderSettings(panel);
+      }, "Increase font size"));
+    }
 
     var theme = document.createElement("select");
     theme.className = "peerva-reader-select";
@@ -679,12 +791,17 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     });
     toolbar.appendChild(theme);
     toolbar.appendChild(el("span", "peerva-reader-spacer"));
-    toolbar.appendChild(readerButton("Save book ♡", function () {
-      var position = saved.indexOf(item.id);
-      if (position < 0) saved.push(item.id);
-      else saved.splice(position, 1);
-      saveJSON(SAVE_KEY, saved);
-    }, "Add or remove this book from saved books"));
+
+    var saveBtn = readerButton(
+      saved.indexOf(item.id) >= 0 ? "Saved ♥" : "Save book ♡",
+      function () {
+        var nowSaved = toggleSaved(item.id);
+        saveBtn.textContent = nowSaved ? "Saved ♥" : "Save book ♡";
+        render();
+      },
+      "Add or remove this book from saved books"
+    );
+    toolbar.appendChild(saveBtn);
     panel.appendChild(toolbar);
 
     var progressBar = el("div", "peerva-reader-progress");
@@ -693,6 +810,7 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     panel.appendChild(progressBar);
 
     var content = el("div", "peerva-reader-content");
+    if (isVisualItem(item)) content.classList.add("is-visual");
     content.id = "peerva-reader-content";
     panel.appendChild(content);
 
@@ -703,11 +821,8 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     document.body.style.overflow = "hidden";
     document.body.appendChild(readerOverlay);
 
-    var escapeHandler = function (event) {
-      if (event.key === "Escape") {
-        closeReader();
-        document.removeEventListener("keydown", escapeHandler);
-      }
+    escapeHandler = function (event) {
+      if (event.key === "Escape") closeReader();
     };
     document.addEventListener("keydown", escapeHandler);
 
@@ -730,7 +845,7 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
 
   function applyReaderSettings(panel) {
     var content = panel.querySelector(".peerva-reader-content");
-    if (!content) return;
+    if (!content || content.classList.contains("is-visual")) return;
     content.style.fontSize = Number(readerSettings.fontSize || 19) + "px";
     content.style.lineHeight = String(readerSettings.lineHeight || 1.85);
   }
@@ -740,17 +855,195 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     content.appendChild(el("div", "peerva-reader-error", message));
   }
 
-  /* -------------------- Internet Archive reader --------------------
-     Prefer plain text inside Peerva. If no plain text is available,
-     embed an accessible PDF in the Peerva reader panel.
-     Some restricted items may not be readable or downloadable.
-  ------------------------------------------------------------------ */
+  function readerIsOpen(content) {
+    return !!readerOverlay && content.isConnected;
+  }
+
+  function renderParagraphs(content, rawText) {
+    var fragment = document.createDocumentFragment();
+    String(rawText || "").replace(/\r/g, "").split(/\n\s*\n/).forEach(function (block) {
+      var text = block.replace(/\s*\n\s*/g, " ").trim();
+      if (text) fragment.appendChild(el("p", "", text));
+    });
+    content.appendChild(fragment);
+    return content.children.length > 0;
+  }
+
+  /* -------------------- Image pages (manga & comics) -------------------- */
+
+  function showImagePages(content, urls, altBase, onFirstFail) {
+    content.innerHTML = "";
+    content.classList.add("is-visual");
+
+    if (!urls.length) {
+      if (onFirstFail) onFirstFail();
+      return;
+    }
+
+    /* Probe the first image so we can fall back cleanly if it's blocked. */
+    var probe = new Image();
+    probe.onload = function () {
+      if (!readerIsOpen(content)) return;
+      var pages = el("div", "peerva-manga-pages");
+      var fragment = document.createDocumentFragment();
+
+      urls.forEach(function (url, i) {
+        var image = el("img");
+        image.alt = altBase + ", page " + (i + 1);
+        image.loading = i < 2 ? "eager" : "lazy";
+        image.decoding = "async";
+        image.referrerPolicy = "no-referrer";
+        image.src = url;
+        image.addEventListener("error", function () {
+          if (image.dataset.retried) {
+            image.alt = "Page " + (i + 1) + " could not be loaded";
+            return;
+          }
+          image.dataset.retried = "1";
+          setTimeout(function () { image.src = url + (url.indexOf("?") < 0 ? "?" : "&") + "r=1"; }, 1500);
+        });
+        fragment.appendChild(image);
+      });
+
+      pages.appendChild(fragment);
+      content.appendChild(pages);
+    };
+    probe.onerror = function () {
+      if (onFirstFail) onFirstFail();
+      else showReaderError(content, "These page images could not be loaded.");
+    };
+    probe.referrerPolicy = "no-referrer";
+    probe.src = urls[0];
+  }
+
+  /* -------------------- PDF reader (PDF.js) -------------------- */
+
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (pdfJsPromise) return pdfJsPromise;
+
+    pdfJsPromise = new Promise(function (resolve, reject) {
+      var script = document.createElement("script");
+      script.src = PDFJS_SRC;
+      script.async = true;
+      script.onload = function () {
+        if (!window.pdfjsLib) { reject(new Error("PDF.js did not load")); return; }
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+        resolve(window.pdfjsLib);
+      };
+      script.onerror = function () { pdfJsPromise = null; reject(new Error("PDF.js failed to load")); };
+      document.head.appendChild(script);
+    });
+
+    return pdfJsPromise;
+  }
+
+  /* Draws every PDF page to a canvas, rendering only pages near the screen. */
+  function showPdf(url, content, panel, onFail) {
+    content.innerHTML = "";
+    content.classList.add("is-visual");
+    var status = el("p", "peerva-reader-note", "Opening PDF…");
+    content.appendChild(status);
+
+    loadPdfJs()
+      .then(function (pdfjsLib) {
+        return pdfjsLib.getDocument({ url: url }).promise;
+      })
+      .then(function (pdf) {
+        if (!readerIsOpen(content)) return;
+        return pdf.getPage(1).then(function (firstPage) {
+          if (!readerIsOpen(content)) return;
+          content.innerHTML = "";
+
+          var base = firstPage.getViewport({ scale: 1 });
+          var ratio = base.width / base.height;
+          var holder = el("div", "peerva-pdf-pages");
+          content.appendChild(holder);
+
+          var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (!entry.isIntersecting) return;
+              observer.unobserve(entry.target);
+              drawPdfPage(pdf, entry.target);
+            });
+          }, { root: panel, rootMargin: "900px 0px" });
+
+          for (var n = 1; n <= pdf.numPages; n++) {
+            var wrap = el("div", "peerva-pdf-page");
+            wrap.style.aspectRatio = String(ratio);
+            wrap.dataset.page = String(n);
+            holder.appendChild(wrap);
+            observer.observe(wrap);
+          }
+        });
+      })
+      .catch(function (error) {
+        console.warn("Peerva PDF reader:", error);
+        if (!readerIsOpen(content)) return;
+        if (onFail) onFail();
+        else showReaderError(content, "This PDF could not be opened. The file server may block browser access.");
+      });
+  }
+
+  function drawPdfPage(pdf, wrap) {
+    var number = parseInt(wrap.dataset.page, 10);
+    pdf.getPage(number).then(function (page) {
+      var cssWidth = wrap.clientWidth || 800;
+      var base = page.getViewport({ scale: 1 });
+      var scale = (cssWidth / base.width) * Math.min(window.devicePixelRatio || 1, 2);
+      var viewport = page.getViewport({ scale: scale });
+
+      var canvas = document.createElement("canvas");
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      wrap.style.aspectRatio = canvas.width + " / " + canvas.height;
+      wrap.appendChild(canvas);
+
+      return page.render({
+        canvasContext: canvas.getContext("2d"),
+        viewport: viewport
+      }).promise;
+    }).catch(function (error) {
+      console.warn("Peerva PDF page " + number + " failed:", error);
+    });
+  }
+
+  /* -------------------- Internet Archive reader -------------------- */
+
+  function archiveDownloadUrl(identifier, filename) {
+    return "https://archive.org/download/" +
+      encodeURIComponent(identifier) + "/" +
+      filename.split("/").map(encodeURIComponent).join("/");
+  }
+
+  function archivePageUrls(identifier, count) {
+    var urls = [];
+    for (var i = 0; i < count; i++) {
+      urls.push("https://archive.org/download/" + encodeURIComponent(identifier) +
+        "/page/n" + i + "_w1000.jpg");
+    }
+    return urls;
+  }
+
+  /* Last resort: the Internet Archive's own embedded reader, kept inside Peerva. */
+  function showArchiveEmbed(item, content) {
+    content.innerHTML = "";
+    content.classList.add("is-visual");
+    content.appendChild(el("p", "peerva-reader-note",
+      "Reading inside Peerva with the Internet Archive viewer."));
+
+    var frame = el("iframe", "peerva-reader-frame");
+    frame.title = item.title + " reader";
+    frame.src = "https://archive.org/embed/" + encodeURIComponent(item.archiveId);
+    frame.setAttribute("allowfullscreen", "true");
+    content.appendChild(frame);
+  }
 
   function loadInternetArchiveReader(item, content, panel) {
     content.innerHTML = "";
-    content.appendChild(el("p", "", "Loading the available book files into Peerva…"));
+    content.appendChild(el("p", "peerva-reader-note", "Loading pages into Peerva…"));
 
-    fetch("https://archive.org/metadata/" + encodeURIComponent(item.archiveId))
+    fetchWithTimeout("https://archive.org/metadata/" + encodeURIComponent(item.archiveId), 20000)
       .then(function (response) {
         if (!response.ok) throw new Error("Could not retrieve item metadata.");
         return response.json();
@@ -764,88 +1057,125 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
           return file && file.name && !file.private;
         });
 
-        var textFile = files.find(function (file) {
-          return /\.txt$/i.test(file.name) &&
-            !/meta|djvu\.xml|scandata|files\.xml/i.test(file.name);
-        });
+        var imageCount = parseInt(data.metadata.imagecount, 10) || item.imageCount || 0;
 
-        var pdfFile = files.find(function (file) {
-          return /\.pdf$/i.test(file.name) && !file.private;
-        });
+        var pdfFile =
+          files.find(function (f) { return /\.pdf$/i.test(f.name) && !/_text\.pdf$/i.test(f.name); }) ||
+          files.find(function (f) { return /\.pdf$/i.test(f.name); });
 
+        var textFile =
+          files.find(function (f) { return /_djvu\.txt$/i.test(f.name); }) ||
+          files.find(function (f) {
+            return /\.txt$/i.test(f.name) && !/meta|djvu\.xml|scandata|files\.xml/i.test(f.name);
+          });
+
+        var embed = function () { showArchiveEmbed(item, content); };
+        var tryPdf = function (fallback) {
+          if (pdfFile) showPdf(archiveDownloadUrl(item.archiveId, pdfFile.name), content, panel, fallback);
+          else fallback();
+        };
+
+        /* Manga & comics: always images. Never plain text. */
+        if (isVisualItem(item)) {
+          if (imageCount > 0) {
+            showImagePages(content, archivePageUrls(item.archiveId, imageCount), item.title, function () {
+              tryPdf(embed);
+            });
+          } else {
+            tryPdf(embed);
+          }
+          return;
+        }
+
+        /* Books: readable text first, then PDF pages, then embedded viewer. */
         if (textFile) {
-          var textUrl = archiveDownloadUrl(item.archiveId, textFile.name);
-          fetch(textUrl)
+          fetchWithTimeout(archiveDownloadUrl(item.archiveId, textFile.name), 30000)
             .then(function (response) {
               if (!response.ok) throw new Error("The text file is not available.");
               return response.text();
             })
             .then(function (raw) {
-              if (!readerOverlay || !content.isConnected) return;
+              if (!readerIsOpen(content)) return;
               content.innerHTML = "";
-              var cleanText = raw
-                .replace(/\r/g, "")
-                .replace(/^\s*Created by.*\n/i, "");
-
-              cleanText.split(/\n\s*\n/).forEach(function (paragraph) {
-                if (paragraph.trim()) {
-                  content.appendChild(el("p", "", paragraph.trim()));
-                }
-              });
-
-              if (!content.children.length) {
-                showReaderError(content, "This text file did not contain readable text.");
-              }
+              var cleaned = raw.replace(/^\s*Created by.*\n/i, "");
+              if (!renderParagraphs(content, cleaned)) throw new Error("empty text");
             })
             .catch(function () {
-              if (pdfFile) showArchivePdf(item, pdfFile, content);
-              else showReaderError(content, "Peerva couldn't load the text file. This item may restrict direct access.");
+              if (!readerIsOpen(content)) return;
+              tryPdf(function () {
+                if (imageCount > 0) {
+                  showImagePages(content, archivePageUrls(item.archiveId, imageCount), item.title, embed);
+                } else {
+                  embed();
+                }
+              });
             });
           return;
         }
 
-        if (pdfFile) {
-          showArchivePdf(item, pdfFile, content);
-          return;
-        }
-
-        showReaderError(
-          content,
-          "Internet Archive did not provide a directly readable text or PDF file for this item. It may be a lending-only item, use another format, or have access restrictions. Peerva has not redirected you away."
-        );
+        tryPdf(function () {
+          if (imageCount > 0) {
+            showImagePages(content, archivePageUrls(item.archiveId, imageCount), item.title, embed);
+          } else {
+            embed();
+          }
+        });
       })
       .catch(function (error) {
-        showReaderError(
-          content,
-          "Peerva couldn't load this item's files. Internet Archive may be temporarily unavailable or this item may have access restrictions. Please try another book."
-        );
         console.warn("Peerva Internet Archive reader:", error);
+        if (readerIsOpen(content)) showArchiveEmbed(item, content);
       });
   }
 
-  function archiveDownloadUrl(identifier, filename) {
-    return "https://archive.org/download/" +
-      encodeURIComponent(identifier) + "/" +
-      filename.split("/").map(encodeURIComponent).join("/");
+  /* -------------------- Project Gutenberg reader -------------------- */
+
+  function stripGutenbergBoilerplate(raw) {
+    return raw
+      .replace(/^[\s\S]*?\*\*\*\s*START OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[^\n]*\n/i, "")
+      .replace(/\*\*\*\s*END OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[\s\S]*$/i, "")
+      .trim();
   }
 
-  function showArchivePdf(item, file, content) {
-    content.innerHTML = "";
-    content.style.maxWidth = "100%";
+  /* Tries each text URL directly, then through public CORS relays. */
+  function fetchBookText(urls) {
+    var candidates = [];
+    urls.forEach(function (u) { candidates.push(u); });
+    var first = urls[0];
+    candidates.push("https://api.allorigins.win/raw?url=" + encodeURIComponent(first));
+    candidates.push("https://corsproxy.io/?" + encodeURIComponent(first));
 
-    var note = el("p", "peerva-reader-note",
-      "Reading this available PDF inside Peerva. Some PDFs may not display on every browser or device.");
-    content.appendChild(note);
+    var index = 0;
+    function attempt() {
+      if (index >= candidates.length) return Promise.reject(new Error("All text sources failed"));
+      var url = candidates[index++];
+      return fetchWithTimeout(url, 15000)
+        .then(function (response) {
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          return response.text();
+        })
+        .then(function (text) {
+          if (!text || text.length < 800 || /^\s*<(!doctype|html)/i.test(text)) {
+            throw new Error("Not a book text");
+          }
+          return text;
+        })
+        .catch(attempt);
+    }
+    return attempt();
+  }
+
+  function showGutenbergFrame(item, content) {
+    content.innerHTML = "";
+    content.classList.add("is-visual");
+    content.appendChild(el("p", "peerva-reader-note",
+      "Reading this book inside Peerva with the original formatted edition."));
 
     var frame = el("iframe", "peerva-reader-frame");
-    frame.title = item.title + " PDF reader";
-    frame.loading = "lazy";
-    frame.src = archiveDownloadUrl(item.archiveId, file.name) + "#view=FitH";
+    frame.title = item.title;
+    frame.src = item.htmlUrl;
     frame.setAttribute("referrerpolicy", "no-referrer");
     content.appendChild(frame);
   }
-
-  /* -------------------- Project Gutenberg reader -------------------- */
 
   function loadGutenbergReader(item, content, panel) {
     if (item.chapters && item.chapters[0] && item.chapters[0].body) {
@@ -853,43 +1183,24 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
       return;
     }
 
-    if (!item.downloadUrl) {
-      showReaderError(content, "No directly readable text file was found for this book.");
-      return;
-    }
-
     content.innerHTML = "";
-    content.appendChild(el("p", "", "Loading the full text into Peerva…"));
+    content.appendChild(el("p", "peerva-reader-note", "Loading the full text into Peerva…"));
 
-    fetch(item.downloadUrl)
-      .then(function (response) {
-        if (!response.ok) throw new Error("Book text unavailable.");
-        return response.text();
-      })
+    fetchBookText(item.textUrls || [])
       .then(function (raw) {
-        if (!readerOverlay || !content.isConnected) return;
-
-        raw = raw
-          .replace(/^.*?\*\*\*\s*START OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[^\n]*\n/i, "")
-          .replace(/\*\*\*\s*END OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[\s\S]*$/i, "")
-          .trim();
-
-        item.chapters[0].body = raw;
+        if (!readerIsOpen(content)) return;
+        item.chapters[0].body = stripGutenbergBoilerplate(raw);
         renderLocalChapter(item, content, panel);
       })
       .catch(function () {
-        showReaderError(
-          content,
-          "The book text could not be fetched directly. The source may block browser requests. This book has not been opened on an external reading page."
-        );
+        if (readerIsOpen(content)) showGutenbergFrame(item, content);
       });
   }
 
-  /* -------------------- Local/licensed chapter reader -------------------- */
+  /* -------------------- Local / licensed chapter reader -------------------- */
 
   function renderLocalChapter(item, content, panel) {
     content.innerHTML = "";
-    content.style.maxWidth = item.type === "Manga" ? "850px" : "690px";
 
     var chapters = item.chapters || [];
     var index = Math.max(0, Math.min(readerChapterIndex, chapters.length - 1));
@@ -900,92 +1211,117 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
       return;
     }
 
+    var visual = isVisualItem(item) || (chapter.pages && chapter.pages.length) || chapter.pdf;
+    if (visual) content.classList.add("is-visual");
+    content.style.maxWidth = visual ? "900px" : "690px";
+
     if (chapter.pages && chapter.pages.length) {
-      var pages = el("div", "peerva-manga-pages");
-      chapter.pages.forEach(function (page, pageIndex) {
-        var url = typeof page === "string" ? page : page.url;
-        if (!url) return;
-        var image = el("img");
-        image.src = url;
-        image.alt = item.title + ", page " + (pageIndex + 1);
-        image.loading = "lazy";
-        image.decoding = "async";
-        pages.appendChild(image);
+      var urls = chapter.pages.map(function (page) {
+        return typeof page === "string" ? page : page.url;
+      }).filter(Boolean);
+      showImagePages(content, urls, item.title, function () {
+        showReaderError(content, "The page images for this chapter could not be loaded.");
       });
-      content.appendChild(pages);
+    } else if (chapter.pdf) {
+      showPdf(chapter.pdf, content, panel);
+    } else if (isVisualItem(item)) {
+      showReaderError(content, "This manga has no page images yet.");
     } else {
-      content.style.whiteSpace = "normal";
-      String(chapter.body || "").split(/\n\s*\n/).forEach(function (paragraph) {
-        if (paragraph.trim()) content.appendChild(el("p", "", paragraph.trim()));
-      });
+      renderParagraphs(content, chapter.body || "");
     }
 
     progress[item.id] = index;
     saveJSON(PROGRESS_KEY, progress);
 
-    var controls = el("div", "peerva-reader-controls");
-    var previous = readerButton("← Previous", function () {
-      readerChapterIndex = index - 1;
-      openReader(item, readerChapterIndex);
-    });
-    previous.disabled = index <= 0;
+    if (chapters.length > 1) {
+      var controls = el("div", "peerva-reader-controls");
+      var previous = readerButton("← Previous", function () {
+        openReader(item, index - 1);
+      });
+      previous.disabled = index <= 0;
+      controls.appendChild(previous);
+      controls.appendChild(el("span", "", "Chapter " + (index + 1) + " of " + chapters.length));
 
-    controls.appendChild(previous);
-    controls.appendChild(el("span", "", chapters.length > 1
-      ? "Chapter " + (index + 1) + " of " + chapters.length
-      : "Full book"));
-
-    var next = readerButton("Next →", function () {
-      readerChapterIndex = index + 1;
-      openReader(item, readerChapterIndex);
-    });
-    next.disabled = index >= chapters.length - 1;
-    controls.appendChild(next);
-    panel.appendChild(controls);
+      var next = readerButton("Next →", function () {
+        openReader(item, index + 1);
+      });
+      next.disabled = index >= chapters.length - 1;
+      controls.appendChild(next);
+      panel.appendChild(controls);
+    }
   }
 
-  /* -------------------- Catalogue loading -------------------- */
+  /* -------------------- Catalogue loading (first 1000 books) --------------------
+     Loads Gutendex pages one after another (32 books each) until 1000
+     readable books are in the library. Cards show 60 at a time so the
+     page stays fast.
+  ------------------------------------------------------------------------------ */
+
+  var statusBtn = null;
+
+  function getStatusButton() {
+    if (statusBtn) return statusBtn;
+    statusBtn = el("button", "read-btn", "");
+    statusBtn.id = "peerva-load-more-books";
+    statusBtn.type = "button";
+    statusBtn.style.cssText = "display:none;margin:10px auto 30px;padding:10px 18px;cursor:pointer;";
+    statusBtn.addEventListener("click", loadMoreBooks);
+    if (grid.parentNode) {
+      grid.parentNode.insertBefore(statusBtn, getMoreButton().nextSibling);
+    }
+    return statusBtn;
+  }
+
+  function setStatus(label, clickable) {
+    var button = getStatusButton();
+    if (!label) {
+      button.style.display = "none";
+      return;
+    }
+    button.textContent = label;
+    button.disabled = !clickable;
+    button.style.opacity = clickable ? "1" : ".65";
+    button.style.display = "block";
+  }
 
   function loadMoreBooks() {
-    if (GUTENBERG_LOADING || GUTENBERG_DONE || ITEMS.length >= GUTENBERG_TARGET) return;
-
+    if (GUTENBERG_LOADING || GUTENBERG_DONE) return;
     GUTENBERG_LOADING = true;
-    updateLoadMoreButton("Loading English books…", true);
 
-    fetch("https://gutendex.com/books/?languages=en&copyright=false&page=" + GUTENBERG_PAGE)
-      .then(function (response) {
-        if (!response.ok) throw new Error("Catalogue request failed.");
-        return response.json();
-      })
+    var url = GUTENBERG_NEXT || "https://gutendex.com/books/?languages=en&copyright=false";
+    setStatus("Loading English books… " + GUTENBERG_COUNT + " / " + GUTENBERG_TARGET, false);
+
+    fetchJSONRetry(url, 3)
       .then(function (data) {
         (data.results || []).forEach(function (book) {
-          var normalized = normalizeGutenbergBook(book);
-          if (normalized && !ITEMS.some(function (x) { return x.id === normalized.id; }) &&
-              ITEMS.length < GUTENBERG_TARGET) {
-            ITEMS.push(normalized);
+          if (GUTENBERG_COUNT >= GUTENBERG_TARGET) return;
+          var item = normalizeGutenbergBook(book);
+          if (item && !ITEMS.some(function (x) { return x.id === item.id; })) {
+            ITEMS.push(item);
+            GUTENBERG_COUNT++;
           }
         });
 
-        GUTENBERG_PAGE++;
-        GUTENBERG_DONE = !data.next || ITEMS.length >= GUTENBERG_TARGET;
+        GUTENBERG_NEXT = data.next ? String(data.next).replace(/^http:/, "https:") : "";
+        GUTENBERG_DONE = !GUTENBERG_NEXT || GUTENBERG_COUNT >= GUTENBERG_TARGET;
 
         addPermittedItems();
         buildControls();
         render();
 
-        updateLoadMoreButton(
-          GUTENBERG_DONE
-            ? "Loaded " + ITEMS.length + " catalogue books"
-            : "Load more English books (" + ITEMS.length + " / " + GUTENBERG_TARGET + ")",
-          GUTENBERG_DONE
-        );
+        GUTENBERG_LOADING = false;
+
+        if (GUTENBERG_DONE) {
+          setStatus("", false);
+        } else {
+          loadMoreBooks();
+        }
       })
       .catch(function (error) {
         console.warn("Peerva catalogue loading failed:", error);
-        updateLoadMoreButton("Couldn't load books — tap to retry", false);
-      })
-      .finally(function () {
         GUTENBERG_LOADING = false;
+        render();
+        setStatus("Couldn't load more books (" + GUTENBERG_COUNT + " loaded) — tap to retry", true);
       });
   }
 
@@ -996,7 +1332,7 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
 
       item.type = item.type || (LICENSED_MANGA.indexOf(item) >= 0 ? "Manga" : "Story");
       item.author = item.author || "Unknown author";
-      item.genre = item.genre || "Fantasy";
+      item.genre = item.genre || (item.type === "Manga" ? "Manga & Comics" : "Fantasy");
       item.audience = item.audience || "Teens & Adults";
       item.lang = item.lang || "English";
       item.source = item.source || "Creator-approved";
@@ -1005,34 +1341,12 @@ if (!grid || !search || !tabBox || !audienceBox || !genreBox || !savedBtn) {
     });
   }
 
-  function getLoadMoreButton() {
-    var button = document.getElementById("peerva-load-more-books");
-    if (button) return button;
-
-    button = el("button", "read-btn", "Load more English books");
-    button.id = "peerva-load-more-books";
-    button.type = "button";
-    button.style.cssText = "display:block;margin:24px auto;padding:12px 20px;cursor:pointer;";
-    button.addEventListener("click", loadMoreBooks);
-
-    if (grid.parentNode) {
-      grid.parentNode.insertBefore(button, grid.nextSibling);
-    }
-    return button;
-  }
-
-  function updateLoadMoreButton(label, disabled) {
-    var button = getLoadMoreButton();
-    button.textContent = label;
-    button.disabled = !!disabled;
-    button.style.opacity = disabled ? ".65" : "1";
-  }
-
   /* -------------------- Start library -------------------- */
 
   buildControls();
   addPermittedItems();
   render();
+  loadManga();
   loadMoreBooks();
 
 })();
