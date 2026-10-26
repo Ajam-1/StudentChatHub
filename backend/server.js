@@ -657,6 +657,322 @@ app.post("/unsubscribe", requireDatabase, authenticateToken, async (req, res) =>
 });
 
 
+/* ==========================================
+   PEERVA ANIME API — ADD-ON
+   Keeps existing Peerva routes unchanged
+========================================== */
+
+const animeEpisodeSchema = new mongoose.Schema(
+  {
+    animeId: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true
+    },
+    animeTitle: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200
+    },
+    poster: {
+      type: String,
+      default: ""
+    },
+    season: {
+      type: Number,
+      default: 1,
+      min: 1
+    },
+    episodeNumber: {
+      type: Number,
+      required: true,
+      min: 1
+    },
+    episodeTitle: {
+      type: String,
+      default: "",
+      maxlength: 200
+    },
+    videoUrl: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    subtitlesUrl: {
+      type: String,
+      default: ""
+    },
+    description: {
+      type: String,
+      default: "",
+      maxlength: 3000
+    }
+  },
+  { timestamps: true }
+);
+
+animeEpisodeSchema.index(
+  {
+    animeId: 1,
+    season: 1,
+    episodeNumber: 1
+  },
+  { unique: true }
+);
+
+const AnimeEpisode = mongoose.model(
+  "AnimeEpisode",
+  animeEpisodeSchema
+);
+
+// Check that a supplied URL is HTTP or HTTPS.
+function isValidAnimeUrl(value, optional = false) {
+  if (optional && !value) return true;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ||
+           url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+// Public catalogue: list anime titles.
+app.get("/api/anime", async (req, res) => {
+  try {
+    if (typeof requireDatabase === "function") {
+      const databaseReady = await requireDatabase(req, res);
+      if (databaseReady === false) return;
+    }
+
+    const anime = await AnimeEpisode.aggregate([
+      {
+        $sort: {
+          animeTitle: 1,
+          season: 1,
+          episodeNumber: 1
+        }
+      },
+      {
+        $group: {
+          _id: "$animeId",
+          title: { $first: "$animeTitle" },
+          poster: { $first: "$poster" },
+          description: { $first: "$description" },
+          episodeCount: { $sum: 1 },
+          latestUpdate: { $max: "$updatedAt" }
+        }
+      },
+      { $sort: { title: 1 } }
+    ]);
+
+    res.json({ success: true, anime });
+  } catch (error) {
+    console.error("Anime catalogue error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Could not load the anime catalogue."
+    });
+  }
+});
+
+// Public episodes for one anime.
+app.get("/api/anime/:animeId/episodes", async (req, res) => {
+  try {
+    if (typeof requireDatabase === "function") {
+      const databaseReady = await requireDatabase(req, res);
+      if (databaseReady === false) return;
+    }
+
+    const animeId = String(req.params.animeId)
+      .trim()
+      .toLowerCase();
+
+    const episodes = await AnimeEpisode.find({ animeId })
+      .select(
+        "animeId animeTitle poster season episodeNumber episodeTitle videoUrl subtitlesUrl description"
+      )
+      .sort({ season: 1, episodeNumber: 1 })
+      .lean();
+
+    res.json({ success: true, episodes });
+  } catch (error) {
+    console.error("Anime episodes error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Could not load episodes."
+    });
+  }
+});
+
+// Management routes require a valid Peerva login.
+// Set ADMIN_EMAIL in Render to restrict management to your account.
+function requireAnimeAdmin(req, res, next) {
+  if (typeof authenticateToken !== "function") {
+    return res.status(500).json({
+      success: false,
+      message: "Authentication is not configured."
+    });
+  }
+
+  authenticateToken(req, res, () => {
+    const adminEmail = String(process.env.ADMIN_EMAIL || "")
+      .trim()
+      .toLowerCase();
+
+    const userEmail = String(
+      req.user?.email || req.user?.user?.email || ""
+    ).trim().toLowerCase();
+
+    if (!adminEmail) {
+      return res.status(503).json({
+        success: false,
+        message: "Anime management is not configured."
+      });
+    }
+
+    if (!userEmail || userEmail !== adminEmail) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the Peerva anime administrator can do this."
+      });
+    }
+
+    next();
+  });
+}
+
+// Add an episode.
+app.post(
+  "/api/anime/episodes",
+  requireAnimeAdmin,
+  async (req, res) => {
+    try {
+      if (typeof requireDatabase === "function") {
+        const databaseReady = await requireDatabase(req, res);
+        if (databaseReady === false) return;
+      }
+
+      const {
+        animeId,
+        animeTitle,
+        poster = "",
+        season = 1,
+        episodeNumber,
+        episodeTitle = "",
+        videoUrl,
+        subtitlesUrl = "",
+        description = ""
+      } = req.body || {};
+
+      if (
+        !animeId ||
+        !animeTitle ||
+        !videoUrl ||
+        !Number.isInteger(Number(season)) ||
+        Number(season) < 1 ||
+        !Number.isInteger(Number(episodeNumber)) ||
+        Number(episodeNumber) < 1
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Provide animeId, animeTitle, videoUrl, a valid season, and episodeNumber."
+        });
+      }
+
+      if (
+        !isValidAnimeUrl(videoUrl) ||
+        !isValidAnimeUrl(poster, true) ||
+        !isValidAnimeUrl(subtitlesUrl, true)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Video, poster, and subtitle links must be valid HTTP or HTTPS URLs."
+        });
+      }
+
+      const episode = await AnimeEpisode.create({
+        animeId: String(animeId).trim().toLowerCase(),
+        animeTitle: String(animeTitle).trim(),
+        poster: String(poster).trim(),
+        season: Number(season),
+        episodeNumber: Number(episodeNumber),
+        episodeTitle: String(episodeTitle).trim(),
+        videoUrl: String(videoUrl).trim(),
+        subtitlesUrl: String(subtitlesUrl).trim(),
+        description: String(description).trim()
+      });
+
+      res.status(201).json({
+        success: true,
+        message: "Anime episode added successfully.",
+        episode
+      });
+    } catch (error) {
+      if (error.code === 11000) {
+        return res.status(409).json({
+          success: false,
+          message: "That anime season and episode already exist."
+        });
+      }
+
+      console.error("Add anime episode error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Could not add the episode."
+      });
+    }
+  }
+);
+
+// Delete an episode by its MongoDB ID.
+app.delete(
+  "/api/anime/episodes/:id",
+  requireAnimeAdmin,
+  async (req, res) => {
+    try {
+      if (typeof requireDatabase === "function") {
+        const databaseReady = await requireDatabase(req, res);
+        if (databaseReady === false) return;
+      }
+
+      if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid episode ID."
+        });
+      }
+
+      const deleted = await AnimeEpisode.findByIdAndDelete(
+        req.params.id
+      );
+
+      if (!deleted) {
+        return res.status(404).json({
+          success: false,
+          message: "Episode not found."
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Episode deleted successfully."
+      });
+    } catch (error) {
+      console.error("Delete anime episode error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Could not delete the episode."
+      });
+    }
+  }
+);
+
+/* END PEERVA ANIME API ADD-ON */
+
 /* =========================
    404 AND ERROR HANDLING
 ========================= */
