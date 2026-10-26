@@ -568,3 +568,110 @@ main {
         transition: none !important;
     }
 }
+
+/* Peerva Anime navigation card */
+.anime-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 16px;
+    margin-bottom: 14px;
+    background: #1c1c1c;
+    border: 1px solid #333;
+    border-radius: 14px;
+    color: #fff;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: background 0.2s ease, border-color 0.2s ease,
+                transform 0.2s ease;
+}
+
+.anime-link:hover {
+    background: #27201f;
+    border-color: #ff633e;
+    transform: translateY(-2px);
+}
+
+.anime-link .anime-icon {
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: #38221e;
+    color: #ff633e;
+}
+
+.anime-link .anime-icon svg {
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.anime-link .anime-text {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-width: 0;
+}
+
+.anime-link .anime-text strong {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.anime-link .anime-text small {
+    color: #aaa;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.anime-link .anime-go {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    flex-shrink: 0;
+}
+
+.anime-link .anime-go svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.anime-link:hover .anime-go {
+    color: #ff633e;
+}
+
+@media (max-width: 480px) {
+    .anime-link {
+        padding: 13px;
+        gap: 11px;
+    }
+
+    .anime-link .anime-icon {
+        width: 42px;
+        height: 42px;
+    }
+
+    .anime-link .anime-text strong {
+        font-size: 15px;
+    }
+
+    .anime-link .anime-text small {
+        font-size: 12px;
+    }
+}
