@@ -204,6 +204,7 @@ main{width:min(1250px,92%);margin:auto}
   justify-content:center;
   background:#252525;
   overflow:hidden;
+  font-size:45px;
 }
 .poster img{
   width:100%;
@@ -243,6 +244,7 @@ main{width:min(1250px,92%);margin:auto}
   padding:9px 5px;
   font-size:11px;
   min-width:0;
+  text-align:center;
 }
 .empty{
   display:none;
@@ -361,7 +363,7 @@ footer{
     <div class="eyebrow">Discover anime</div>
     <h1>Your next anime<br>starts here.</h1>
     <p>
-      Explore thousands of anime titles, discover new favourites,
+      Explore anime titles, discover new favourites,
       and find episodes available on Peerva.
     </p>
     <button class="button" id="exploreBtn" type="button">
@@ -375,7 +377,7 @@ footer{
   <div class="section-heading">
     <div>
       <h2 id="sectionTitle">Trending Anime</h2>
-      <p id="resultCount">Discover popular anime</p>
+      <p id="resultCount">Discover anime on Peerva</p>
     </div>
   </div>
 
@@ -385,7 +387,7 @@ footer{
   </div>
 
   <p class="catalogue-note">
-    Anime information, descriptions and artwork are provided by AniList.
+    Anime information and artwork are provided by AnimeDoc.
     Video availability depends on authorised episode sources connected to Peerva.
   </p>
 
@@ -420,8 +422,8 @@ footer{
 </section>
 
 <div class="status">
-  Peerva Anime uses AniList for anime metadata. AniList does not provide
-  playable videos. Only authorised video sources can be added to Peerva.
+  Peerva Anime uses AnimeDoc for anime discovery and metadata.
+  Only authorised video sources can be added to Peerva.
 </div>
 
 </main>
@@ -429,7 +431,7 @@ footer{
 <footer>
   <strong>PEERVA ANIME</strong><br>
   Discover your next favourite anime.<br>
-  Anime information powered by AniList.
+  Anime discovery powered by AnimeDoc.
 </footer>
 
 <script>
@@ -483,17 +485,37 @@ async function apiRequest(path) {
 
 /* =========================================
    RESPONSE NORMALISATION
+   AnimeDoc response structures can be nested.
 ========================================= */
 
 function getAnimeArray(result) {
   if (Array.isArray(result)) return result;
-  if (Array.isArray(result.anime)) return result.anime;
-  if (Array.isArray(result.results)) return result.results;
-  if (Array.isArray(result.media)) return result.media;
-  if (Array.isArray(result.data)) return result.data;
 
-  if (result.data && Array.isArray(result.data.Page?.media)) {
-    return result.data.Page.media;
+  const candidates = [
+    result?.subjects,
+    result?.subjectList,
+    result?.results,
+    result?.items,
+    result?.list,
+    result?.anime,
+    result?.trending,
+    result?.data?.subjects,
+    result?.data?.subjectList,
+    result?.data?.results,
+    result?.data?.items,
+    result?.data?.list,
+    result?.data?.anime,
+    result?.data?.trending,
+    result?.data?.data?.subjects,
+    result?.data?.data?.subjectList,
+    result?.data?.data?.results,
+    result?.data?.data?.items,
+    result?.data?.data?.list,
+    result?.data?.data
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate;
   }
 
   return [];
@@ -501,10 +523,17 @@ function getAnimeArray(result) {
 
 function getCatalogueArray(result) {
   if (Array.isArray(result)) return result;
-  if (Array.isArray(result.anime)) return result.anime;
-  if (Array.isArray(result.catalogue)) return result.catalogue;
-  if (Array.isArray(result.items)) return result.items;
-  if (Array.isArray(result.data)) return result.data;
+
+  const candidates = [
+    result?.anime,
+    result?.catalogue,
+    result?.items,
+    result?.data
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate;
+  }
 
   return [];
 }
@@ -522,98 +551,122 @@ function setStatus(message, isError = false) {
 }
 
 /* =========================================
-   ANIME DATA HELPERS
+   ANIMEDOC DATA HELPERS
 ========================================= */
 
 function getTitle(anime) {
-  if (typeof anime.title === "string" && anime.title.trim()) {
-    return anime.title;
-  }
-
-  if (anime.title && typeof anime.title === "object") {
-    return (
-      anime.title.english ||
-      anime.title.romaji ||
-      anime.title.native ||
-      "Unknown anime"
-    );
-  }
-
   return (
-    anime.titles?.english ||
-    anime.titles?.romaji ||
-    anime.titles?.native ||
+    anime.title ||
+    anime.name ||
+    anime.subjectTitle ||
+    anime.titleEnglish ||
+    anime.englishTitle ||
+    anime.title_en ||
+    anime.subjectName ||
     "Unknown anime"
   );
 }
 
 function getPoster(anime) {
   return (
+    anime.cover ||
+    anime.coverUrl ||
+    anime.coverImage ||
     anime.poster ||
-    anime.coverImage?.extraLarge ||
-    anime.coverImage?.large ||
-    anime.coverImage?.medium ||
     anime.image ||
+    anime.imageUrl ||
+    anime.thumbnail ||
+    anime.pic ||
+    anime.img ||
     ""
   );
 }
 
-function getBanner(anime) {
-  return anime.bannerImage || "";
+function getDetailPath(anime) {
+  return (
+    anime.detailPath ||
+    anime.detail_path ||
+    anime.path ||
+    anime.urlPath ||
+    anime.slug ||
+    ""
+  );
 }
 
-function getYear(anime) {
+function getSubjectId(anime) {
   return (
-    anime.seasonYear ||
-    anime.startDate?.year ||
-    "Year unknown"
+    anime.subjectId ||
+    anime.subject_id ||
+    anime.id ||
+    anime.subject?.subjectId ||
+    ""
   );
 }
 
 function getFormat(anime) {
-  return anime.format || "ANIME";
+  return (
+    anime.subjectTypeName ||
+    anime.typeName ||
+    anime.format ||
+    anime.category ||
+    "ANIME"
+  );
+}
+
+function getYear(anime) {
+  return (
+    anime.year ||
+    anime.releaseYear ||
+    anime.seasonYear ||
+    anime.startDate?.year ||
+    ""
+  );
+}
+
+function getEpisodes(anime) {
+  return (
+    anime.totalEpisodes ||
+    anime.episodeCount ||
+    anime.episodes ||
+    anime.totalEpisode ||
+    ""
+  );
 }
 
 function getScore(anime) {
-  const score = anime.score ?? anime.averageScore;
+  const score = anime.score || anime.rating || anime.averageScore;
 
   if (!score) return "";
 
-  const number = Number(score);
-
-  if (!Number.isFinite(number)) return "";
-
-  return `⭐ ${(number / 10).toFixed(1)}`;
-}
-
-function getGenres(anime) {
-  return Array.isArray(anime.genres)
-    ? anime.genres
-    : [];
+  return `⭐ ${score}`;
 }
 
 function getDescription(anime) {
-  const value = anime.description || "";
+  const value =
+    anime.description ||
+    anime.introduction ||
+    anime.intro ||
+    anime.summary ||
+    "";
 
-  const temporary = document.createElement("div");
+  const temporary = document.createElement("textarea");
   temporary.innerHTML = String(value);
 
-  return (
-    temporary.textContent ||
-    temporary.innerText ||
-    ""
-  ).replace(/\s+/g, " ").trim();
+  return temporary.value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function formatMeta(anime) {
   const parts = [];
 
-  if (anime.format) parts.push(anime.format);
-  if (getYear(anime) !== "Year unknown") parts.push(getYear(anime));
+  const year = getYear(anime);
+  const episodes = getEpisodes(anime);
 
-  if (anime.episodes) {
-    parts.push(`${anime.episodes} episodes`);
-  }
+  if (getFormat(anime)) parts.push(getFormat(anime));
+  if (year) parts.push(year);
+  if (episodes) parts.push(`${episodes} episodes`);
 
   return parts.join(" · ") || "Anime";
 }
@@ -645,30 +698,45 @@ function safeHttpsUrl(value) {
 ========================================= */
 
 function findCatalogueEntry(anime) {
+  const subjectId = String(getSubjectId(anime));
+  const detailPath = String(getDetailPath(anime));
+
   return state.catalogue.find(item => {
-    return Number(item.anilistId) === Number(anime.id);
+    return (
+      (subjectId && String(item.subjectId || "") === subjectId) ||
+      (detailPath && String(item.detailPath || "") === detailPath)
+    );
   }) || null;
 }
 
 /* =========================================
-   DETAILS PAGE URL
+   ANIMEDOC DETAILS PAGE URL
 ========================================= */
 
 function getDetailsUrl(anime, catalogueEntry = null) {
+  const params = new URLSearchParams();
+
+  const detailPath = getDetailPath(anime);
+  const subjectId = getSubjectId(anime);
   const title = getTitle(anime);
   const poster = getPoster(anime);
 
-  const params = new URLSearchParams();
-
-  params.set("animeId", String(anime.id));
-  params.set("title", title);
-
-  if (catalogueEntry?.animeId) {
-    params.set("catalogueId", String(catalogueEntry.animeId));
+  if (detailPath) {
+    params.set("detailPath", detailPath);
   }
+
+  if (subjectId) {
+    params.set("subjectId", String(subjectId));
+  }
+
+  params.set("title", title);
 
   if (poster) {
     params.set("poster", poster);
+  }
+
+  if (catalogueEntry?.animeId) {
+    params.set("catalogueId", String(catalogueEntry.animeId));
   }
 
   return `anime-details.html?${params.toString()}`;
@@ -681,9 +749,7 @@ function getDetailsUrl(anime, catalogueEntry = null) {
 async function loadCatalogue() {
   try {
     const result = await apiRequest("/api/anime");
-
     state.catalogue = getCatalogueArray(result);
-
   } catch (error) {
     console.warn(
       "Could not load Peerva episode catalogue:",
@@ -703,8 +769,7 @@ function renderAnime(animeList) {
 
   const validAnime = animeList.filter(anime =>
     anime &&
-    anime.id &&
-    Number.isFinite(Number(anime.id))
+    (getSubjectId(anime) || getDetailPath(anime))
   );
 
   $("emptyMessage").style.display =
@@ -773,11 +838,15 @@ function renderAnime(animeList) {
     const actions = document.createElement("div");
     actions.className = "card-actions";
 
-    const detailsButton = document.createElement("a");
+    const detailsButton = document.createElement("button");
 
+    detailsButton.type = "button";
     detailsButton.className = "button";
     detailsButton.textContent = "Details";
-    detailsButton.href = getDetailsUrl(anime, catalogueEntry);
+
+    detailsButton.addEventListener("click", () => {
+      openDetails(anime);
+    });
 
     const episodesButton = document.createElement("a");
 
@@ -794,6 +863,7 @@ function renderAnime(animeList) {
       episodesButton.style.cursor = "not-allowed";
       episodesButton.title =
         "No authorised episode source has been added to Peerva yet.";
+
       episodesButton.addEventListener("click", event => {
         event.preventDefault();
       });
@@ -809,39 +879,85 @@ function renderAnime(animeList) {
 }
 
 /* =========================================
+   LOAD ANIMEDOC DETAILS
+========================================= */
+
+async function loadAnimeDetails(anime) {
+  const detailPath = getDetailPath(anime);
+
+  if (!detailPath) {
+    return anime;
+  }
+
+  try {
+    const result = await apiRequest(
+      `/api/animedoc/details?detailPath=${encodeURIComponent(detailPath)}`
+    );
+
+    const details =
+      result?.data?.data ||
+      result?.data ||
+      result?.result ||
+      result;
+
+    return {
+      ...anime,
+      ...(details && typeof details === "object" ? details : {})
+    };
+
+  } catch (error) {
+    console.warn("Could not load AnimeDoc details:", error);
+    return anime;
+  }
+}
+
+/* =========================================
    OPEN ANIME DETAILS PREVIEW
 ========================================= */
 
-function openDetails(anime) {
-  const title = getTitle(anime);
-  const catalogueEntry = findCatalogueEntry(anime);
-
+async function openDetails(anime) {
   $("details").classList.add("show");
+
+  $("detailsTitle").textContent = getTitle(anime);
+  $("detailsMeta").textContent = "Loading anime information...";
+  $("detailsDescription").textContent = "";
+  $("detailsAvailability").textContent = "";
 
   const posterUrl = safeHttpsUrl(getPoster(anime));
 
   $("detailsPoster").src = posterUrl;
   $("detailsPoster").hidden = !posterUrl;
 
-  $("detailsTitle").textContent = title;
+  const actions = $("detailsActions");
+  actions.replaceChildren();
+
+  $("details").scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+  const details = await loadAnimeDetails(anime);
+
+  $("detailsTitle").textContent = getTitle(details);
 
   $("detailsMeta").textContent = [
-    formatMeta(anime),
-    anime.status || "",
-    getGenres(anime).join(", ")
+    formatMeta(details),
+    details.status || "",
+    Array.isArray(details.genres)
+      ? details.genres.join(", ")
+      : ""
   ].filter(Boolean).join(" · ");
 
   $("detailsDescription").textContent =
-    getDescription(anime) ||
+    getDescription(details) ||
     "No description is available.";
+
+  const catalogueEntry = findCatalogueEntry(anime);
 
   $("detailsAvailability").textContent =
     catalogueEntry
       ? `${catalogueEntry.episodeCount || 0} episode(s) are listed on Peerva.`
       : "No authorised episodes for this anime have been added to Peerva yet.";
-
-  const actions = $("detailsActions");
-  actions.replaceChildren();
 
   const detailsLink = document.createElement("a");
 
@@ -851,8 +967,10 @@ function openDetails(anime) {
 
   actions.appendChild(detailsLink);
 
-  if (anime.siteUrl) {
-    const officialUrl = safeHttpsUrl(anime.siteUrl);
+  if (details.officialSite || details.siteUrl) {
+    const officialUrl = safeHttpsUrl(
+      details.officialSite || details.siteUrl
+    );
 
     if (officialUrl) {
       const sourceLink = document.createElement("a");
@@ -861,20 +979,15 @@ function openDetails(anime) {
       sourceLink.href = officialUrl;
       sourceLink.target = "_blank";
       sourceLink.rel = "noopener noreferrer";
-      sourceLink.textContent = "AniList ↗";
+      sourceLink.textContent = "Official Site ↗";
 
       actions.appendChild(sourceLink);
     }
   }
-
-  $("details").scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
 }
 
 /* =========================================
-   SEARCH ANIME
+   SEARCH ANIME USING ANIMEDOC
 ========================================= */
 
 async function searchAnime(search) {
@@ -895,11 +1008,11 @@ async function searchAnime(search) {
   grid.replaceChildren();
   $("emptyMessage").style.display = "none";
 
-  setStatus(`Searching AniList for "${query}"...`);
+  setStatus(`Searching AnimeDoc for "${query}"...`);
 
   try {
     const result = await apiRequest(
-      `/api/anime/search?q=${encodeURIComponent(query)}`
+      `/api/animedoc/search?q=${encodeURIComponent(query)}`
     );
 
     if (requestId !== state.requestNumber) return;
@@ -917,22 +1030,21 @@ async function searchAnime(search) {
   } catch (error) {
     if (requestId !== state.requestNumber) return;
 
-    console.error("Anime search error:", error);
+    console.error("AnimeDoc search error:", error);
 
     state.anime = [];
-
     renderAnime([]);
 
     setStatus(
       error.message ||
-      "Could not search anime. Please try again.",
+      "Could not search AnimeDoc. Please try again.",
       true
     );
   }
 }
 
 /* =========================================
-   LOAD TRENDING / POPULAR
+   LOAD TRENDING / POPULAR FROM ANIMEDOC
 ========================================= */
 
 async function loadAnime(type = "trending") {
@@ -953,7 +1065,7 @@ async function loadAnime(type = "trending") {
   grid.replaceChildren();
   $("emptyMessage").style.display = "none";
 
-  setStatus("Loading anime from AniList...");
+  setStatus("Loading anime from AnimeDoc...");
 
   document.querySelectorAll(".tab").forEach(button => {
     button.classList.toggle(
@@ -963,9 +1075,15 @@ async function loadAnime(type = "trending") {
   });
 
   try {
-    const result = await apiRequest(
-      `/api/anime/${type}`
-    );
+    let endpoint;
+
+    if (type === "popular") {
+      endpoint = "/api/animedoc/section";
+    } else {
+      endpoint = "/api/animedoc/trending";
+    }
+
+    const result = await apiRequest(endpoint);
 
     if (requestId !== state.requestNumber) return;
 
@@ -975,22 +1093,21 @@ async function loadAnime(type = "trending") {
 
     setStatus(
       state.anime.length
-        ? `Loaded ${state.anime.length} anime successfully.`
-        : "No anime were returned."
+        ? `Loaded ${state.anime.length} anime from AnimeDoc.`
+        : "AnimeDoc did not return any anime. Try again later."
     );
 
   } catch (error) {
     if (requestId !== state.requestNumber) return;
 
-    console.error("Anime loading error:", error);
+    console.error("AnimeDoc loading error:", error);
 
     state.anime = [];
-
     renderAnime([]);
 
     setStatus(
       error.message ||
-      "Could not connect to Peerva's anime service.",
+      "Could not connect to AnimeDoc. Please try again.",
       true
     );
   }
