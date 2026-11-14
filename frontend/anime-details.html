@@ -2,1371 +2,750 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101010">
-  <title>Anime Details — Peerva Anime</title>
-  <meta name="description" content="Explore anime and watch available episodes on Peerva Anime.">
-  <link rel="icon" type="image/png" href="images/peerva-icon.png">
-
-  <style>
-    :root {
-      --bg: #101010;
-      --panel: #1b1b1b;
-      --panel2: #242424;
-      --text: #f5f5f5;
-      --muted: #aaa;
-      --accent: #ff633e;
-      --border: #303030;
-      --danger: #ff8b78;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    button, input, select {
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    .navbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      min-height: 68px;
-      padding: 12px 5%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      background: #141414f5;
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(12px);
-    }
-
-    .logo {
-      font-size: 23px;
-      font-weight: 900;
-      letter-spacing: -1px;
-      white-space: nowrap;
-    }
-
-    .logo span {
-      color: var(--accent);
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      font-size: 14px;
-      color: #ccc;
-    }
-
-    .nav-links a:hover,
-    .bottom-links a:hover {
-      color: var(--accent);
-    }
-
-    main {
-      width: min(1250px, 92%);
-      margin: auto;
-    }
-
-    .banner {
-      height: 320px;
-      position: relative;
-      overflow: hidden;
-      background:
-        radial-gradient(ellipse at 80% 20%, #ff633e35, transparent 45%),
-        linear-gradient(120deg, #30201c, #171717);
-    }
-
-    .banner img {
-      width: 100%;
-      height: 100%;
-      display: block;
-      object-fit: cover;
-      object-position: center 30%;
-    }
-
-    .banner::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        to bottom,
-        #10101020,
-        #10101055 65%,
-        var(--bg)
-      );
-      pointer-events: none;
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: 215px minmax(0, 1fr);
-      gap: 30px;
-      position: relative;
-      z-index: 2;
-      margin-top: -115px;
-    }
-
-    .poster-column {
-      min-width: 0;
-    }
-
-    .poster {
-      display: block;
-      width: 100%;
-      aspect-ratio: 2 / 3;
-      object-fit: cover;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--panel2);
-    }
-
-    .poster-buttons {
-      display: grid;
-      gap: 9px;
-      margin-top: 14px;
-    }
-
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 11px 16px;
-      min-height: 42px;
-      border: 0;
-      border-radius: 8px;
-      background: var(--accent);
-      color: white;
-      font-size: 13px;
-      font-weight: 700;
-      text-align: center;
-    }
-
-    .button:hover {
-      background: #e94e2b;
-    }
-
-    .button.secondary {
-      background: #303030;
-      border: 1px solid #444;
-      color: white;
-    }
-
-    .button.secondary:hover {
-      background: #3b3b3b;
-    }
-
-    .button:disabled {
-      cursor: not-allowed;
-      opacity: .5;
-    }
-
-    .details {
-      min-width: 0;
-      padding-top: 115px;
-    }
-
-    .eyebrow {
-      color: var(--accent);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-    }
-
-    h1 {
-      margin: 15px 0;
-      font-size: clamp(30px, 4.5vw, 48px);
-      line-height: 1.1;
-      letter-spacing: -1.5px;
-    }
-
-    .description {
-      color: #ccc;
-      font-size: 14px;
-      line-height: 1.8;
-      white-space: pre-line;
-    }
-
-    .genres {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin-top: 15px;
-    }
-
-    .genre {
-      padding: 6px 10px;
-      border-radius: 20px;
-      background: #30231f;
-      border: 1px solid #563328;
-      color: #ffad98;
-      font-size: 11px;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 25px;
-    }
-
-    .stat {
-      padding: 14px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      min-width: 0;
-    }
-
-    .stat-label {
-      display: block;
-      margin-bottom: 8px;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .stat-value {
-      font-size: 14px;
-      font-weight: 700;
-      overflow-wrap: anywhere;
-    }
-
-    .section {
-      margin-top: 28px;
-      padding: 22px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-    }
-
-    .section h2 {
-      margin: 0 0 17px;
-      font-size: 21px;
-    }
-
-    .status {
-      margin-top: 15px;
-      padding: 13px 15px;
-      background: #1d1d1d;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: #bbb;
-      font-size: 13px;
-      line-height: 1.7;
-    }
-
-    .status.error {
-      color: #ffb6a5;
-      border-color: #704034;
-    }
-
-    .loading {
-      padding: 65px 15px;
-      color: var(--muted);
-      text-align: center;
-    }
-
-    .episode-help {
-      margin: 0 0 14px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.6;
-    }
-
-    .episode-controls {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-
-    .episode-controls select {
-      min-width: 140px;
-      padding: 10px 12px;
-      color: var(--text);
-      background: #242424;
-      border: 1px solid #444;
-      border-radius: 8px;
-      outline: none;
-    }
-
-    .episode-controls select:focus {
-      border-color: var(--accent);
-    }
-
-    .episode-list {
-      display: grid;
-      gap: 9px;
-    }
-
-    .episode-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px;
-      background: #222;
-      border: 1px solid #333;
-      border-radius: 9px;
-    }
-
-    .episode-row.active {
-      border-color: var(--accent);
-      background: #2a201d;
-    }
-
-    .episode-meta {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .episode-number {
-      color: var(--accent);
-      font-weight: 700;
-      font-size: 12px;
-    }
-
-    .episode-title {
-      margin-top: 5px;
-      color: var(--text);
-      font-size: 14px;
-      overflow-wrap: anywhere;
-    }
-
-    .episode-extra {
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .episode-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      flex-shrink: 0;
-    }
-
-    .episode-actions button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 9px 13px;
-      color: #fff;
-      background: var(--accent);
-      border: 0;
-      border-radius: 7px;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .episode-actions button:hover {
-      background: #e94e2b;
-    }
-
-    .player-area {
-      margin-top: 18px;
-    }
-
-    .player-area video,
-    .player-area iframe {
-      display: block;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #000;
-      border: 0;
-      border-radius: 9px;
-    }
-
-    .player-title {
-      margin: 0 0 12px;
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .bottom-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 18px;
-      margin-top: 25px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    footer {
-      margin-top: 50px;
-      padding: 28px 5%;
-      border-top: 1px solid var(--border);
-      color: var(--muted);
-      text-align: center;
-      font-size: 13px;
-      line-height: 1.8;
-    }
-
-    [hidden] {
-      display: none !important;
-    }
-
-    @media (max-width: 900px) {
-      .stats {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 700px) {
-      .navbar {
-        padding: 12px 4%;
-        flex-wrap: wrap;
-        gap: 12px;
-      }
-
-      .nav-links {
-        order: 3;
-        width: 100%;
-        justify-content: center;
-        gap: 17px;
-      }
-
-      .banner {
-        height: 245px;
-      }
-
-      .hero {
-        grid-template-columns: 125px minmax(0, 1fr);
-        gap: 17px;
-        margin-top: -75px;
-      }
-
-      .details {
-        padding-top: 78px;
-      }
-
-      .eyebrow {
-        letter-spacing: 2px;
-      }
-
-      h1 {
-        font-size: clamp(24px, 5vw, 34px);
-      }
-
-      .description {
-        font-size: 13px;
-        line-height: 1.7;
-      }
-
-      .section {
-        padding: 17px;
-      }
-
-      .poster-buttons .button {
-        padding: 10px 5px;
-        font-size: 11px;
-      }
-    }
-
-    @media (max-width: 520px) {
-      .logo {
-        font-size: 20px;
-      }
-
-      .nav-links {
-        font-size: 12px;
-        gap: 13px;
-      }
-
-      .hero {
-        grid-template-columns: 100px minmax(0, 1fr);
-        gap: 13px;
-      }
-
-      .details {
-        padding-top: 76px;
-      }
-
-      .stats {
-        gap: 8px;
-      }
-
-      .stat {
-        padding: 10px;
-      }
-
-      .stat-value {
-        font-size: 12px;
-      }
-
-      .episode-row {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .episode-actions {
-        width: 100%;
-      }
-
-      .episode-actions button {
-        flex: 1;
-      }
-
-      .episode-controls {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .episode-controls select {
-        width: 100%;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101010">
+<title>Anime Details — Peerva Anime</title>
+<link rel="icon" href="images/peerva-icon.png">
+
+<style>
+:root {
+  --bg:#101010;
+  --panel:#1b1b1b;
+  --panel2:#242424;
+  --text:#f5f5f5;
+  --muted:#aaa;
+  --accent:#ff633e;
+  --border:#303030;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
+}
+button,select { font:inherit; }
+button,a { cursor:pointer; }
+a { color:inherit;text-decoration:none; }
+
+.navbar {
+  position:sticky;
+  top:0;
+  z-index:20;
+  min-height:65px;
+  padding:12px 5%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#141414f5;
+  border-bottom:1px solid var(--border);
+}
+.logo { font-size:23px;font-weight:900; }
+.logo span { color:var(--accent); }
+.nav-links { display:flex;gap:20px;color:#ccc;font-size:14px; }
+.nav-links a:hover { color:var(--accent); }
+
+main { width:min(1150px,92%);margin:auto; }
+.banner {
+  height:280px;
+  background:linear-gradient(120deg,#30201c,#171717);
+  overflow:hidden;
+}
+.banner img { width:100%;height:100%;object-fit:cover; }
+.hero {
+  display:grid;
+  grid-template-columns:200px minmax(0,1fr);
+  gap:28px;
+  margin-top:-90px;
+  position:relative;
+}
+.poster {
+  width:100%;
+  aspect-ratio:2/3;
+  object-fit:cover;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+}
+.details { padding-top:90px; }
+.eyebrow {
+  color:var(--accent);
+  font-size:12px;
+  font-weight:bold;
+  letter-spacing:2px;
+}
+h1 { font-size:clamp(27px,4vw,43px);margin:12px 0; }
+.description { color:#ccc;line-height:1.8;font-size:14px; }
+.stats {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-top:20px;
+}
+.stat {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:9px;
+  padding:13px;
+}
+.stat-label { display:block;color:var(--muted);font-size:11px;margin-bottom:7px; }
+.stat-value { font-size:14px;font-weight:bold; }
+
+.section {
+  margin-top:25px;
+  padding:22px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+.section h2 { margin:0 0 16px;font-size:21px; }
+.muted { color:var(--muted);font-size:13px;line-height:1.7; }
+.genres { display:flex;flex-wrap:wrap;gap:8px; }
+.genre {
+  background:var(--panel2);
+  border:1px solid #383838;
+  padding:8px 12px;
+  border-radius:30px;
+  font-size:12px;
+}
+.button {
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+  padding:11px 15px;
+  border:0;
+  border-radius:8px;
+  background:var(--accent);
+  color:white;
+  font-weight:bold;
+}
+.button.secondary { background:#303030;border:1px solid #444; }
+.button:disabled { opacity:.5;cursor:not-allowed; }
+
+.player {
+  width:100%;
+  aspect-ratio:16/9;
+  max-height:650px;
+  background:#000;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:15px;
+}
+.player video,.player iframe {
+  width:100%;
+  height:100%;
+  border:0;
+  background:#000;
+}
+.episode-list { display:grid;gap:9px; }
+.episode {
+  width:100%;
+  text-align:left;
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:#242424;
+  color:white;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+.episode:hover,.episode.active {
+  border-color:var(--accent);
+  background:#30221e;
+}
+.episode small { color:var(--muted); }
+.controls {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  margin:12px 0;
+}
+select {
+  background:#242424;
+  color:white;
+  border:1px solid #444;
+  border-radius:7px;
+  padding:10px;
+  max-width:100%;
+}
+.status {
+  padding:13px;
+  background:#202020;
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:#bbb;
+  font-size:13px;
+  line-height:1.7;
+}
+.error { color:#ffb6a5;border-color:#704034; }
+.loading { padding:60px 10px;text-align:center;color:var(--muted); }
+footer {
+  margin-top:45px;
+  padding:25px;
+  text-align:center;
+  border-top:1px solid var(--border);
+  color:var(--muted);
+  font-size:13px;
+}
+[hidden] { display:none!important; }
+
+@media(max-width:700px) {
+  .navbar { flex-wrap:wrap;gap:12px; }
+  .nav-links { width:100%;justify-content:center; }
+  .banner { height:210px; }
+  .hero { grid-template-columns:115px minmax(0,1fr);gap:15px;margin-top:-65px; }
+  .details { padding-top:70px; }
+  .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .section { padding:16px; }
+}
+</style>
+
+<!-- HLS support for browsers that do not play HLS natively -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 </head>
 
 <body>
-  <header class="navbar">
-    <a class="logo" href="anime.html">PEERVA<span> ANIME</span></a>
 
-    <nav class="nav-links">
-      <a href="anime.html">Explore Anime</a>
-      <a href="index.html">Peerva Home</a>
-    </nav>
-  </header>
+<header class="navbar">
+  <a class="logo" href="anime.html">PEERVA<span> ANIME</span></a>
+  <nav class="nav-links">
+    <a href="anime.html">Explore Anime</a>
+    <a href="anime.html#airing">Airing</a>
+    <a href="index.html">Peerva Home</a>
+  </nav>
+</header>
 
-  <div class="banner">
-    <img id="bannerImage" alt="" hidden>
+<div class="banner">
+  <img id="bannerImage" alt="" hidden>
+</div>
+
+<main>
+  <div id="loading" class="loading">Loading anime...</div>
+
+  <div id="pageContent" hidden>
+    <section class="hero">
+      <div>
+        <img id="poster" class="poster" alt="Anime poster">
+        <p>
+          <a id="anilistButton" class="button secondary"
+             target="_blank" rel="noopener noreferrer">
+            View on AniList
+          </a>
+        </p>
+      </div>
+
+      <div class="details">
+        <div class="eyebrow">PEERVA ANIME</div>
+        <h1 id="animeTitle"></h1>
+        <div id="description" class="description"></div>
+
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-label">Score</span>
+            <span class="stat-value" id="score">—</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Format</span>
+            <span class="stat-value" id="format">—</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Episodes</span>
+            <span class="stat-value" id="totalEpisodes">—</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Year</span>
+            <span class="stat-value" id="year">—</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Genres</h2>
+      <div class="genres" id="genres"></div>
+    </section>
+
+    <section class="section">
+      <h2>Anime information</h2>
+      <div class="muted" id="information"></div>
+    </section>
+
+    <section class="section" id="watchSection">
+      <h2>Watch anime</h2>
+      <p class="muted">
+        Select an available episode to start watching.
+        Only video sources Peerva is authorised to use are displayed.
+      </p>
+
+      <div id="episodeStatus" class="status">
+        Checking available episodes...
+      </div>
+
+      <div class="controls" id="episodeControls" hidden>
+        <label for="seasonSelect">Season:</label>
+        <select id="seasonSelect"></select>
+        <label for="languageSelect">Language:</label>
+        <select id="languageSelect">
+          <option value="all">All languages</option>
+          <option value="sub">Subbed</option>
+          <option value="dub">Dubbed</option>
+          <option value="both">Sub and dub</option>
+        </select>
+      </div>
+
+      <div id="episodeList" class="episode-list"></div>
+
+      <div id="sourceArea" hidden>
+        <h3 id="selectedEpisodeTitle">Choose a source</h3>
+        <div class="controls">
+          <label for="sourceSelect">Video source:</label>
+          <select id="sourceSelect"></select>
+          <button id="playButton" class="button" type="button">
+            Play episode
+          </button>
+        </div>
+      </div>
+
+      <div id="playerArea" hidden>
+        <div class="player">
+          <video id="videoPlayer" controls playsinline
+                 preload="metadata" hidden>
+            Your browser does not support video playback.
+          </video>
+          <iframe id="embedPlayer"
+                  title="Authorised anime video"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowfullscreen
+                  referrerpolicy="strict-origin-when-cross-origin"
+                  hidden></iframe>
+        </div>
+        <p id="playerStatus" class="muted">
+          Select an episode to play.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Next episode</h2>
+      <div id="nextEpisode" class="muted"></div>
+    </section>
   </div>
 
-  <main>
-    <div id="loading" class="loading">
-      Loading anime details…
-    </div>
-
-    <div id="pageContent" hidden>
-      <section class="hero">
-        <aside class="poster-column">
-          <img
-            id="poster"
-            class="poster"
-            alt="Anime poster"
-            hidden
-          >
-
-          <div class="poster-buttons">
-            <button
-              id="watchButton"
-              class="button"
-              type="button"
-              disabled
-            >
-              ▶ Watch episodes
-            </button>
-
-            <a
-              id="officialLink"
-              class="button secondary"
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              hidden
-            >
-              AniList ↗
-            </a>
-          </div>
-        </aside>
-
-        <div class="details">
-          <div class="eyebrow">Peerva Anime</div>
-
-          <h1 id="animeTitle">Anime</h1>
-
-          <div id="description" class="description">
-            Loading anime information…
-          </div>
-
-          <div id="genres" class="genres"></div>
-
-          <div class="stats">
-            <div class="stat">
-              <span class="stat-label">Episodes listed</span>
-              <span class="stat-value" id="episodeCount">—</span>
-            </div>
-
-            <div class="stat">
-              <span class="stat-label">Year</span>
-              <span class="stat-value" id="year">—</span>
-            </div>
-
-            <div class="stat">
-              <span class="stat-label">Status</span>
-              <span class="stat-value" id="animeStatus">—</span>
-            </div>
-
-            <div class="stat">
-              <span class="stat-label">Rating</span>
-              <span class="stat-value" id="rating">—</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="episodesSection">
-        <h2>Episodes</h2>
-
-        <p class="episode-help">
-          These are the episodes that have been added to Peerva's authorised
-          video catalogue. An anime appearing in search does not necessarily
-          mean its episodes are available to watch yet.
-        </p>
-
-        <div class="episode-controls">
-          <select id="seasonSelect" aria-label="Choose season" hidden>
-            <option value="1">Season 1</option>
-          </select>
-
-          <select id="languageSelect" aria-label="Choose language">
-            <option value="all">All languages</option>
-            <option value="sub">Subtitles</option>
-            <option value="dub">English dub</option>
-            <option value="both">Sub and dub</option>
-          </select>
-        </div>
-
-        <div id="episodeStatus" class="status" role="status">
-          Loading episodes…
-        </div>
-
-        <div id="episodeList" class="episode-list"></div>
-      </section>
-
-      <section class="section" id="playerSection">
-        <h2>Watch on Peerva</h2>
-
-        <div id="watchStatus" class="status" role="status">
-          Select an available episode to start watching.
-        </div>
-
-        <div id="playerArea" class="player-area" hidden>
-          <h3 id="playerTitle" class="player-title"></h3>
-
-          <video
-            id="videoPlayer"
-            controls
-            playsinline
-            preload="metadata"
-            hidden
-          >
-            Your browser does not support HTML video.
-          </video>
-
-          <iframe
-            id="embedPlayer"
-            title="Authorised anime video player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerpolicy="strict-origin-when-cross-origin"
-            allowfullscreen
-            hidden
-          ></iframe>
-        </div>
-      </section>
-    </div>
-
-    <div id="errorBox" class="status error" hidden></div>
-
-    <div class="bottom-links">
-      <a href="anime.html">← Back to anime catalogue</a>
-      <a href="index.html">Back to Peerva</a>
-    </div>
-  </main>
-
-  <footer>
-    <strong>PEERVA ANIME</strong><br>
-    Anime information powered by AniList.<br>
-    Video playback is provided only for authorised episodes added to Peerva.
-  </footer>
-
-  <script>
-    "use strict";
-
-    /*
-      IMPORTANT:
-      This must be the same Render backend URL used in anime.html.
-    */
-    const PEERVA_BACKEND = "https://parva-backend-49br.onrender.com";
-
-    const $ = id => document.getElementById(id);
-
-    const params = new URLSearchParams(window.location.search);
-
-    const anilistId = params.get("animeId") || params.get("id") || "";
-    const catalogueId = params.get("catalogueId") || "";
-    const suppliedTitle =
-      params.get("title") ||
-      params.get("name") ||
-      "Anime";
-
-    const suppliedPoster = params.get("poster") || "";
-
-    let allEpisodes = [];
-    let currentSeason = Number(params.get("season")) || 1;
-    let currentEpisode = null;
-    let currentMedia = null;
-
-    function setStatus(message, isError = false) {
-      $("episodeStatus").textContent = message;
-      $("episodeStatus").classList.toggle("error", isError);
-    }
-
-    function setWatchStatus(message, isError = false) {
-      $("watchStatus").textContent = message;
-      $("watchStatus").classList.toggle("error", isError);
-    }
-
-    function showPageError(message) {
-      $("loading").hidden = true;
-      $("pageContent").hidden = true;
-      $("errorBox").hidden = false;
-      $("errorBox").textContent = message;
-    }
-
-    function safeHttpsUrl(value) {
-      if (typeof value !== "string" || !value.trim()) {
-        return null;
-      }
-
-      try {
-        const url = new URL(value);
-
-        if (url.protocol !== "https:") {
-          return null;
-        }
-
-        return url.href;
-      } catch (_) {
-        return null;
-      }
-    }
-
-    function decodeHtml(value) {
-      const element = document.createElement("textarea");
-      element.innerHTML = String(value || "");
-      return element.value;
-    }
-
-    function cleanDescription(value) {
-      return decodeHtml(
-        String(value || "")
-          .replace(/<br\s*\/?>/gi, "\n")
-          .replace(/<\/p>/gi, "\n\n")
-          .replace(/<[^>]*>/g, "")
-      ).trim();
-    }
-
-    function formatStatus(value) {
-      if (!value) return "Unknown";
-
-      return String(value)
-        .replace(/_/g, " ")
-        .toLowerCase()
-        .replace(/\b\w/g, character => character.toUpperCase());
-    }
-
-    function formatLanguage(value) {
-      const language = String(value || "").toLowerCase();
-
-      if (language === "sub") return "Subtitles";
-      if (language === "dub") return "English dub";
-      if (language === "both") return "Sub and dub";
-
-      return "Other";
-    }
-
-    function getMediaObject(result) {
-      if (!result || typeof result !== "object") {
-        return null;
-      }
-
-      if (result.media) return result.media;
-      if (result.anime) return result.anime;
-      if (result.data && result.data.Media) return result.data.Media;
-      if (result.data && result.data.media) return result.data.media;
-
-      return result;
-    }
-
-    function getEpisodesArray(result) {
-      if (Array.isArray(result)) return result;
-      if (Array.isArray(result.episodes)) return result.episodes;
-      if (Array.isArray(result.data)) return result.data;
-      if (result.data && Array.isArray(result.data.episodes)) {
-        return result.data.episodes;
-      }
-
-      return [];
-    }
-
-    function getStreamObject(result) {
-      if (!result || typeof result !== "object") {
-        return null;
-      }
-
-      if (result.episode) return result.episode;
-      if (result.stream) return result.stream;
-      if (result.data && result.data.episode) return result.data.episode;
-      if (result.data && result.data.stream) return result.data.stream;
-
-      return result;
-    }
-
-    async function apiRequest(path) {
-      const response = await fetch(
-        `${PEERVA_BACKEND}${path}`,
-        {
-          method: "GET",
-          headers: {
-            "Accept": "application/json"
-          }
-        }
-      );
-
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          result.message ||
-          result.error ||
-          `Backend request failed with HTTP ${response.status}.`
-        );
-      }
-
-      return result;
-    }
-
-    function renderMedia(media) {
-      if (!media) return;
-
-      currentMedia = media;
-
-      const titleObject = media.title || {};
-
-      const title =
-        titleObject.english ||
-        titleObject.romaji ||
-        titleObject.native ||
-        suppliedTitle;
-
-      $("animeTitle").textContent = title;
-      document.title = `${title} — Peerva Anime`;
-
-      $("description").textContent =
-        cleanDescription(media.description) ||
-        "No description is available for this anime.";
-
-      const cover =
-        media.coverImage?.extraLarge ||
-        media.coverImage?.large ||
-        media.coverImage?.medium ||
-        suppliedPoster;
-
-      const banner = media.bannerImage || "";
-
-      const safeCover = safeHttpsUrl(cover);
-      const safeBanner = safeHttpsUrl(banner);
-
-      if (safeCover) {
-        $("poster").src = safeCover;
-        $("poster").hidden = false;
-      }
-
-      if (safeBanner) {
-        $("bannerImage").src = safeBanner;
-        $("bannerImage").hidden = false;
-      } else if (safeCover) {
-        $("bannerImage").src = safeCover;
-        $("bannerImage").hidden = false;
-      }
-
-      const genres = Array.isArray(media.genres)
-        ? media.genres
-        : [];
-
-      $("genres").replaceChildren();
-
-      genres.forEach(genre => {
-        const tag = document.createElement("span");
-        tag.className = "genre";
-        tag.textContent = genre;
-        $("genres").append(tag);
-      });
-
-      const seasonYear =
-        media.seasonYear ||
-        media.startDate?.year ||
-        "—";
-
-      $("year").textContent = seasonYear;
-
-      $("animeStatus").textContent =
-        formatStatus(media.status);
-
-      $("rating").textContent =
-        media.averageScore
-          ? `${media.averageScore}%`
-          : "Not rated";
-
-      const officialUrl = safeHttpsUrl(media.siteUrl);
-
-      if (officialUrl) {
-        $("officialLink").href = officialUrl;
-        $("officialLink").hidden = false;
-      }
-    }
-
-    function getEpisodeNumber(episode) {
-      return Number(
-        episode.episodeNumber ??
-        episode.number ??
-        episode.episode ??
-        0
-      );
-    }
-
-    function getEpisodeSeason(episode) {
-      return Number(episode.season || 1);
-    }
-
-    function renderEpisodes() {
-      const list = $("episodeList");
-      list.replaceChildren();
-
-      const selectedLanguage = $("languageSelect").value;
-
-      const filtered = allEpisodes.filter(episode => {
-        const language = String(
-          episode.language || "other"
-        ).toLowerCase();
-
-        const matchesSeason =
-          getEpisodeSeason(episode) === currentSeason;
-
-        const matchesLanguage =
-          selectedLanguage === "all" ||
-          language === selectedLanguage;
-
-        return matchesSeason && matchesLanguage;
-      });
-
-      $("episodeCount").textContent = String(allEpisodes.length);
-
-      if (!filtered.length) {
-        setStatus(
-          allEpisodes.length
-            ? "No episodes match this season and language filter."
-            : "No episodes have been added to Peerva's authorised catalogue for this anime yet."
-        );
-
-        return;
-      }
+  <div id="errorBox" class="status error" hidden></div>
+
+  <p style="margin-top:25px">
+    <a href="anime.html">← Back to anime catalogue</a>
+  </p>
+</main>
+
+<footer>
+  <strong>PEERVA ANIME</strong><br>
+  Discover and watch anime on Peerva.
+</footer>
+
+<script>
+/* =========================================================
+   PEERVA CONFIGURATION
+========================================================= */
+
+/* This is the backend URL from your latest project setup.
+   Change it here only if your Render URL has changed. */
+const BACKEND = "https://parva-backend-49br.onrender.com";
+
+const params = new URLSearchParams(location.search);
+const animeId = Number(params.get("id"));
+
+const $ = id => document.getElementById(id);
+
+let currentAnime = null;
+let allEpisodes = [];
+let selectedEpisode = null;
+let selectedStreams = [];
+let hlsInstance = null;
+
+function setStatus(message, isError = false) {
+  $("episodeStatus").textContent = message;
+  $("episodeStatus").classList.toggle("error", isError);
+}
+
+function safeText(value, fallback = "Not available") {
+  return value === null || value === undefined || value === ""
+    ? fallback
+    : String(value);
+}
+
+async function getJSON(url) {
+  const response = await fetch(url);
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || data.success === false) {
+    throw new Error(data.message || `Server error: ${response.status}`);
+  }
+
+  return data;
+}
+
+/* =========================================================
+   LOAD ANIME DETAILS
+========================================================= */
+
+async function loadAnime() {
+  if (!Number.isInteger(animeId) || animeId < 1) {
+    throw new Error("Invalid anime ID in the page URL.");
+  }
+
+  const data = await getJSON(
+    `${BACKEND}/api/anime/details/${animeId}`
+  );
+
+  const anime = data.anime;
+
+  if (!anime) {
+    throw new Error("Anime information was not returned.");
+  }
+
+  currentAnime = anime;
+
+  document.title = `${anime.title} — Peerva Anime`;
+  $("animeTitle").textContent = anime.title || "Unknown anime";
+  $("description").textContent =
+    anime.description || "No description is available.";
+
+  $("poster").src = anime.poster || "";
+  $("poster").alt = `${anime.title} poster`;
+
+  if (anime.banner) {
+    $("bannerImage").src = anime.banner;
+    $("bannerImage").hidden = false;
+  }
+
+  $("score").textContent = anime.score
+    ? `${anime.score}%`
+    : "Not rated";
+
+  $("format").textContent = safeText(anime.format);
+  $("totalEpisodes").textContent = safeText(anime.episodes);
+  $("year").textContent = safeText(anime.seasonYear);
+
+  $("anilistButton").href =
+    anime.siteUrl || `https://anilist.co/anime/${animeId}`;
+
+  const genres = $("genres");
+  genres.replaceChildren();
+
+  (anime.genres || []).forEach(name => {
+    const tag = document.createElement("span");
+    tag.className = "genre";
+    tag.textContent = name;
+    genres.appendChild(tag);
+  });
+
+  const next = anime.nextAiringEpisode;
+  $("nextEpisode").textContent = next
+    ? `Episode ${next.episode} is scheduled for ${
+        new Date(next.airingAt * 1000).toLocaleString()
+      }.`
+    : "No upcoming episode is listed.";
+
+  $("information").textContent = [
+    `Status: ${safeText(anime.status)}`,
+    `Season: ${safeText(anime.season)}`,
+    `Format: ${safeText(anime.format)}`,
+    `Popularity: ${safeText(anime.popularity)}`
+  ].join(" • ");
+
+  $("loading").hidden = true;
+  $("pageContent").hidden = false;
+
+  await loadEpisodes();
+}
+
+/* =========================================================
+   LOAD AVAILABLE EPISODES
+========================================================= */
+
+async function loadEpisodes() {
+  setStatus("Checking Peerva's episode catalogue...");
+
+  try {
+    const data = await getJSON(
+      `${BACKEND}/api/anime/${animeId}/episodes`
+    );
+
+    allEpisodes = Array.isArray(data.episodes)
+      ? data.episodes
+      : [];
+
+    if (!allEpisodes.length) {
+      $("episodeControls").hidden = true;
+      $("episodeList").replaceChildren();
 
       setStatus(
-        `${filtered.length} episode${filtered.length === 1 ? "" : "s"} available.`
+        "No authorised episodes have been added to Peerva for this anime yet. The anime information is available, but a video source still needs to be connected."
       );
+      return;
+    }
 
-      filtered.sort((a, b) => {
-        return getEpisodeNumber(a) - getEpisodeNumber(b);
-      });
+    const seasons = [...new Set(
+      allEpisodes.map(ep => Number(ep.season) || 1)
+    )].sort((a,b) => a-b);
 
-      filtered.forEach(episode => {
-        const row = document.createElement("article");
-        row.className = "episode-row";
+    $("seasonSelect").replaceChildren();
 
-        const number = document.createElement("div");
-        number.className = "episode-number";
+    seasons.forEach(season => {
+      const option = document.createElement("option");
+      option.value = season;
+      option.textContent = `Season ${season}`;
+      $("seasonSelect").appendChild(option);
+    });
 
-        const episodeNumber = getEpisodeNumber(episode);
+    $("episodeControls").hidden = false;
+    setStatus(`${allEpisodes.length} available episode source records found.`);
+    renderEpisodes();
 
-        number.textContent =
-          `SEASON ${getEpisodeSeason(episode)} · EPISODE ${episodeNumber}`;
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
 
-        const title = document.createElement("div");
-        title.className = "episode-title";
-        title.textContent =
-          episode.episodeTitle ||
-          episode.title ||
-          `Episode ${episodeNumber}`;
+function renderEpisodes() {
+  const season = Number($("seasonSelect").value) || 1;
+  const language = $("languageSelect").value;
 
-        const extra = document.createElement("div");
-        extra.className = "episode-extra";
+  const episodes = allEpisodes.filter(ep => {
+    const correctSeason = Number(ep.season) === season;
+    const correctLanguage =
+      language === "all" || ep.language === language;
 
-        const duration = episode.durationMinutes
-          ? `${episode.durationMinutes} minutes`
-          : "";
+    return correctSeason && correctLanguage;
+  });
 
-        const language = formatLanguage(episode.language);
+  const grouped = new Map();
 
-        extra.textContent = [language, duration]
-          .filter(Boolean)
-          .join(" · ");
+  episodes.forEach(ep => {
+    const key = ep.episodeNumber;
 
-        const meta = document.createElement("div");
-        meta.className = "episode-meta";
-        meta.append(number, title, extra);
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(ep);
+  });
 
-        const actions = document.createElement("div");
-        actions.className = "episode-actions";
+  const list = $("episodeList");
+  list.replaceChildren();
 
-        const playButton = document.createElement("button");
-        playButton.type = "button";
-        playButton.textContent = "▶ Play";
+  if (!grouped.size) {
+    list.textContent = "No episodes available for this season or language.";
+    return;
+  }
 
-        playButton.addEventListener("click", () => {
-          playEpisode(episode, row);
+  [...grouped.entries()]
+    .sort((a,b) => Number(a[0]) - Number(b[0]))
+    .forEach(([number, sources]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "episode";
+
+      const title = sources[0].episodeTitle ||
+        `Episode ${number}`;
+
+      const left = document.createElement("span");
+      left.textContent = `Episode ${number} — ${title}`;
+
+      const right = document.createElement("small");
+      right.textContent = `${sources.length} source(s)`;
+
+      button.append(left,right);
+
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".episode").forEach(item => {
+          item.classList.remove("active");
         });
 
-        actions.append(playButton);
-        row.append(meta, actions);
-        list.append(row);
-      });
-    }
-
-    function renderSeasonOptions() {
-      const select = $("seasonSelect");
-
-      const seasons = [
-        ...new Set(
-          allEpisodes.map(getEpisodeSeason)
-        )
-      ].sort((a, b) => a - b);
-
-      select.replaceChildren();
-
-      seasons.forEach(season => {
-        const option = document.createElement("option");
-        option.value = String(season);
-        option.textContent = `Season ${season}`;
-        select.append(option);
+        button.classList.add("active");
+        chooseEpisode(season, number);
       });
 
-      if (seasons.length > 1) {
-        select.hidden = false;
-      } else {
-        select.hidden = true;
-      }
+      list.appendChild(button);
+    });
+}
 
-      if (seasons.includes(currentSeason)) {
-        select.value = String(currentSeason);
-      } else {
-        currentSeason = seasons[0] || 1;
-        select.value = String(currentSeason);
-      }
+/* =========================================================
+   GET STREAMS FOR AN EPISODE
+========================================================= */
+
+async function chooseEpisode(season, episodeNumber) {
+  selectedEpisode = { season, episodeNumber };
+
+  $("sourceArea").hidden = true;
+  stopPlayer();
+
+  $("selectedEpisodeTitle").textContent =
+    `Season ${season}, Episode ${episodeNumber}`;
+
+  try {
+    const data = await getJSON(
+      `${BACKEND}/api/anime/${animeId}/episode/${episodeNumber}/streams?season=${season}`
+    );
+
+    selectedStreams = data.streams || [];
+
+    if (!selectedStreams.length) {
+      setStatus("No authorised video source was found for this episode.");
+      return;
     }
 
-    async function loadAnimeDetails() {
-      if (!/^\d+$/.test(anilistId)) {
-        throw new Error(
-          "The AniList anime ID is missing. Open this page from the Peerva Anime catalogue."
-        );
-      }
+    const select = $("sourceSelect");
+    select.replaceChildren();
 
-      const result = await apiRequest(
-        `/api/anime/details/${encodeURIComponent(anilistId)}`
-      );
+    selectedStreams.forEach((stream,index) => {
+      const option = document.createElement("option");
+      option.value = index;
+      option.textContent =
+        `${stream.sourceName} — ${stream.language.toUpperCase()}`;
+      select.appendChild(option);
+    });
 
-      const media = getMediaObject(result);
+    $("sourceArea").hidden = false;
+    $("playerArea").hidden = false;
 
-      if (!media) {
-        throw new Error("The anime details could not be found.");
-      }
+    $("playerStatus").textContent =
+      "Choose a source and press Play episode.";
 
-      renderMedia(media);
-    }
+    setStatus(`${selectedStreams.length} authorised source(s) found.`);
 
-    async function loadEpisodes() {
-      if (!catalogueId) {
-        allEpisodes = [];
-        $("episodeCount").textContent = "0";
-        $("watchButton").disabled = true;
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
 
-        setStatus(
-          "This anime has not been connected to an episode catalogue yet. Episodes will appear here after authorised videos are added by the Peerva administrator."
-        );
+/* =========================================================
+   VIDEO PLAYER
+========================================================= */
 
-        return;
-      }
+function stopPlayer() {
+  const video = $("videoPlayer");
+  const frame = $("embedPlayer");
 
-      if (!/^[a-zA-Z0-9_-]+$/.test(catalogueId)) {
-        throw new Error("The anime catalogue ID is invalid.");
-      }
+  if (hlsInstance) {
+    hlsInstance.destroy();
+    hlsInstance = null;
+  }
 
-      setStatus("Loading available episodes…");
+  video.pause();
+  video.removeAttribute("src");
+  video.querySelectorAll("track").forEach(track => track.remove());
+  video.load();
+  video.hidden = true;
 
-      const result = await apiRequest(
-        `/api/anime/${encodeURIComponent(catalogueId)}/episodes`
-      );
+  frame.src = "about:blank";
+  frame.hidden = true;
+}
 
-      allEpisodes = getEpisodesArray(result);
+function isHLS(url) {
+  return /\.m3u8(?:$|[?#])/i.test(url);
+}
 
-      $("watchButton").disabled = allEpisodes.length === 0;
+function addSubtitle(video, subtitlesUrl) {
+  if (!subtitlesUrl) return;
 
-      renderSeasonOptions();
-      renderEpisodes();
-    }
+  const track = document.createElement("track");
+  track.kind = "subtitles";
+  track.label = "English";
+  track.srclang = "en";
+  track.src = subtitlesUrl;
+  track.default = true;
+  video.appendChild(track);
+}
 
-    function stopCurrentPlayer() {
-      const video = $("videoPlayer");
-      const iframe = $("embedPlayer");
+function playSelectedSource() {
+  const index = Number($("sourceSelect").value);
+  const stream = selectedStreams[index];
 
-      video.pause();
-      video.removeAttribute("src");
-      video.querySelectorAll("track").forEach(track => track.remove());
-      video.load();
+  if (!stream || !stream.videoUrl) {
+    setStatus("This video source is missing its playback URL.", true);
+    return;
+  }
 
-      iframe.src = "about:blank";
+  stopPlayer();
 
-      video.hidden = true;
-      iframe.hidden = true;
-      $("playerArea").hidden = true;
+  const url = stream.videoUrl;
+  const video = $("videoPlayer");
+  const frame = $("embedPlayer");
 
-      currentEpisode = null;
-    }
+  $("playerArea").hidden = false;
 
-    function getVideoUrl(stream) {
-      return (
-        stream.videoUrl ||
-        stream.streamUrl ||
-        stream.url ||
-        stream.embedUrl ||
-        ""
-      );
-    }
+  if (stream.sourceType === "embed") {
+    frame.src = url;
+    frame.hidden = false;
 
-    async function playEpisode(episode, selectedRow) {
-      if (!catalogueId) {
-        setWatchStatus(
-          "This anime does not have a Peerva episode catalogue yet.",
-          true
-        );
-        return;
-      }
+    $("playerStatus").textContent =
+      `Playing embedded video from ${stream.sourceName}.`;
 
-      const episodeNumber = getEpisodeNumber(episode);
-      const season = getEpisodeSeason(episode);
+  } else {
+    video.hidden = false;
+    addSubtitle(video, stream.subtitlesUrl);
 
-      if (!episodeNumber || !Number.isFinite(episodeNumber)) {
-        setWatchStatus("This episode has an invalid episode number.", true);
-        return;
-      }
+    if (isHLS(url)) {
+      if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = url;
+      } else if (window.Hls && Hls.isSupported()) {
+        hlsInstance = new Hls();
+        hlsInstance.loadSource(url);
+        hlsInstance.attachMedia(video);
 
-      stopCurrentPlayer();
-
-      document.querySelectorAll(".episode-row").forEach(row => {
-        row.classList.remove("active");
-      });
-
-      if (selectedRow) {
-        selectedRow.classList.add("active");
-      }
-
-      $("playerTitle").textContent =
-        episode.episodeTitle ||
-        episode.title ||
-        `Episode ${episodeNumber}`;
-
-      $("playerArea").hidden = false;
-
-      setWatchStatus("Loading authorised episode stream…");
-
-      $("playerSection").scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-
-      try {
-        const result = await apiRequest(
-          `/api/anime/${encodeURIComponent(catalogueId)}/episode/${episodeNumber}/streams?season=${season}`
-        );
-
-        const stream = getStreamObject(result);
-
-        if (!stream) {
-          throw new Error("No stream information was returned.");
-        }
-
-        const videoUrl = safeHttpsUrl(getVideoUrl(stream));
-
-        if (!videoUrl) {
-          throw new Error(
-            "The episode does not have a valid HTTPS video URL."
-          );
-        }
-
-        const sourceType = String(
-          stream.sourceType ||
-          episode.sourceType ||
-          "direct"
-        ).toLowerCase();
-
-        if (sourceType === "embed") {
-          const iframe = $("embedPlayer");
-
-          iframe.src = videoUrl;
-          iframe.title =
-            episode.episodeTitle ||
-            `Episode ${episodeNumber}`;
-
-          iframe.hidden = false;
-          $("playerArea").hidden = false;
-
-          setWatchStatus(
-            "The authorised episode embed has been loaded. If it does not play, the video provider may restrict embedding."
-          );
-        } else {
-          const video = $("videoPlayer");
-
-          video.src = videoUrl;
-
-          const subtitleUrl = safeHttpsUrl(
-            stream.subtitlesUrl ||
-            episode.subtitlesUrl ||
-            ""
-          );
-
-          if (subtitleUrl) {
-            const track = document.createElement("track");
-            track.kind = "subtitles";
-            track.label = "English";
-            track.srclang = "en";
-            track.src = subtitleUrl;
-            track.default = true;
-            video.append(track);
+        hlsInstance.on(Hls.Events.ERROR, (event,data) => {
+          if (data.fatal) {
+            $("playerStatus").textContent =
+              "The HLS stream could not be played. Check the source and its streaming permissions.";
           }
-
-          video.hidden = false;
-          $("playerArea").hidden = false;
-
-          const playPromise = video.play();
-
-          if (playPromise && typeof playPromise.catch === "function") {
-            playPromise.catch(() => {
-              setWatchStatus(
-                "The video is loaded. Press the play button in the player to start."
-              );
-            });
-          }
-
-          setWatchStatus(
-            "The authorised episode is ready. Use the player controls to watch."
-          );
-        }
-
-        currentEpisode = episode;
-
-      } catch (error) {
-        console.error("Episode playback error:", error);
-
-        stopCurrentPlayer();
-
-        setWatchStatus(
-          error.message ||
-          "Could not load this episode. Please try another episode.",
-          true
-        );
-      }
-    }
-
-    $("seasonSelect").addEventListener("change", event => {
-      currentSeason = Number(event.target.value) || 1;
-      renderEpisodes();
-    });
-
-    $("languageSelect").addEventListener("change", () => {
-      renderEpisodes();
-    });
-
-    $("watchButton").addEventListener("click", () => {
-      const firstEpisode = allEpisodes
-        .filter(episode => getEpisodeSeason(episode) === currentSeason)
-        .sort((a, b) => getEpisodeNumber(a) - getEpisodeNumber(b))[0];
-
-      if (!firstEpisode) {
-        setWatchStatus("There are no episodes available to play.", true);
+        });
+      } else {
+        setStatus("This browser does not support this HLS stream.", true);
         return;
       }
-
-      const rows = [...document.querySelectorAll(".episode-row")];
-
-      const selectedRow = rows[0] || null;
-
-      playEpisode(firstEpisode, selectedRow);
-    });
-
-    async function startPage() {
-      $("animeTitle").textContent = suppliedTitle;
-
-      const safePoster = safeHttpsUrl(suppliedPoster);
-
-      if (safePoster) {
-        $("poster").src = safePoster;
-        $("poster").hidden = false;
-      }
-
-      $("pageContent").hidden = false;
-
-      try {
-        await loadAnimeDetails();
-      } catch (error) {
-        console.error("Anime details error:", error);
-
-        $("animeTitle").textContent = suppliedTitle;
-        $("description").textContent =
-          "Anime details could not be loaded. You can still check whether Peerva has episodes available.";
-
-        $("status")?.remove();
-      }
-
-      try {
-        await loadEpisodes();
-      } catch (error) {
-        console.error("Episode catalogue error:", error);
-
-        setStatus(
-          error.message ||
-          "Could not load episodes from the Peerva backend.",
-          true
-        );
-      }
-
-      $("loading").hidden = true;
+    } else {
+      video.src = url;
     }
 
-    startPage().catch(error => {
-      console.error("Peerva Anime page error:", error);
-      showPageError(error.message || "Could not load this anime.");
+    video.load();
+
+    video.play().catch(() => {
+      $("playerStatus").textContent =
+        "Press the play button inside the video player to start.";
     });
-  </script>
+
+    $("playerStatus").textContent =
+      `Playing ${stream.episodeTitle || "episode"} from ${stream.sourceName}.`;
+  }
+
+  $("playerArea").scrollIntoView({
+    behavior:"smooth",
+    block:"start"
+  });
+}
+
+/* =========================================================
+   EVENTS
+========================================================= */
+
+$("seasonSelect").addEventListener("change",renderEpisodes);
+$("languageSelect").addEventListener("change",renderEpisodes);
+$("playButton").addEventListener("click",playSelectedSource);
+
+async function start() {
+  try {
+    await loadAnime();
+  } catch (error) {
+    console.error("Peerva Anime error:",error);
+    $("loading").hidden = true;
+    $("errorBox").hidden = false;
+    $("errorBox").textContent = error.message;
+  }
+}
+
+start();
+</script>
 </body>
 </html>
