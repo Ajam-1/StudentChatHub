@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101010">
   <title>Anime Details — Peerva Anime</title>
-  <meta name="description" content="Explore and watch official Muse Asia anime videos on Peerva Anime.">
+  <meta name="description" content="Explore anime and watch available episodes on Peerva Anime.">
   <link rel="icon" type="image/png" href="images/peerva-icon.png">
 
   <style>
@@ -17,10 +18,16 @@
       --muted: #aaa;
       --accent: #ff633e;
       --border: #303030;
+      --danger: #ff8b78;
     }
 
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
 
     body {
       margin: 0;
@@ -29,9 +36,18 @@
       font-family: Arial, Helvetica, sans-serif;
     }
 
-    button, input { font: inherit; }
-    button { cursor: pointer; }
-    a { color: inherit; text-decoration: none; }
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
 
     .navbar {
       position: sticky;
@@ -55,7 +71,9 @@
       white-space: nowrap;
     }
 
-    .logo span { color: var(--accent); }
+    .logo span {
+      color: var(--accent);
+    }
 
     .nav-links {
       display: flex;
@@ -65,7 +83,10 @@
       color: #ccc;
     }
 
-    .nav-links a:hover { color: var(--accent); }
+    .nav-links a:hover,
+    .bottom-links a:hover {
+      color: var(--accent);
+    }
 
     main {
       width: min(1250px, 92%);
@@ -111,7 +132,9 @@
       margin-top: -115px;
     }
 
-    .poster-column { min-width: 0; }
+    .poster-column {
+      min-width: 0;
+    }
 
     .poster {
       display: block;
@@ -145,7 +168,9 @@
       text-align: center;
     }
 
-    .button:hover { background: #e94e2b; }
+    .button:hover {
+      background: #e94e2b;
+    }
 
     .button.secondary {
       background: #303030;
@@ -153,7 +178,9 @@
       color: white;
     }
 
-    .button.secondary:hover { background: #3b3b3b; }
+    .button.secondary:hover {
+      background: #3b3b3b;
+    }
 
     .button:disabled {
       cursor: not-allowed;
@@ -187,11 +214,20 @@
       white-space: pre-line;
     }
 
-    .source {
-      margin-top: 20px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.7;
+    .genres {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 15px;
+    }
+
+    .genre {
+      padding: 6px 10px;
+      border-radius: 20px;
+      background: #30231f;
+      border: 1px solid #563328;
+      color: #ffad98;
+      font-size: 11px;
     }
 
     .stats {
@@ -236,7 +272,7 @@
     }
 
     .status {
-      margin-top: 20px;
+      margin-top: 15px;
       padding: 13px 15px;
       background: #1d1d1d;
       border: 1px solid var(--border);
@@ -257,39 +293,24 @@
       text-align: center;
     }
 
-    .bottom-links {
+    .episode-help {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .episode-controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 18px;
-      margin-top: 25px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .bottom-links a:hover { color: var(--accent); }
-
-    footer {
-      margin-top: 50px;
-      padding: 28px 5%;
-      border-top: 1px solid var(--border);
-      color: var(--muted);
-      text-align: center;
-      font-size: 13px;
-      line-height: 1.8;
-    }
-
-    [hidden] { display: none !important; }
-
-    .muse-search {
-      display: flex;
+      align-items: center;
       gap: 10px;
-      margin: 18px 0;
+      margin-bottom: 16px;
     }
 
-    .muse-search input {
-      flex: 1;
-      min-width: 0;
-      padding: 12px 14px;
+    .episode-controls select {
+      min-width: 140px;
+      padding: 10px 12px;
       color: var(--text);
       background: #242424;
       border: 1px solid #444;
@@ -297,13 +318,8 @@
       outline: none;
     }
 
-    .muse-search input:focus { border-color: var(--accent); }
-
-    .episode-help {
-      margin: 0 0 14px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.6;
+    .episode-controls select:focus {
+      border-color: var(--accent);
     }
 
     .episode-list {
@@ -316,19 +332,15 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 11px;
+      padding: 12px;
       background: #222;
       border: 1px solid #333;
       border-radius: 9px;
     }
 
-    .episode-thumb {
-      width: 145px;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      border-radius: 7px;
-      background: #111;
-      flex-shrink: 0;
+    .episode-row.active {
+      border-color: var(--accent);
+      background: #2a201d;
     }
 
     .episode-meta {
@@ -343,10 +355,16 @@
     }
 
     .episode-title {
-      margin-top: 4px;
+      margin-top: 5px;
       color: var(--text);
-      font-size: 13px;
+      font-size: 14px;
       overflow-wrap: anywhere;
+    }
+
+    .episode-extra {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
     }
 
     .episode-actions {
@@ -356,12 +374,11 @@
       flex-shrink: 0;
     }
 
-    .episode-actions button,
-    .episode-actions a {
+    .episode-actions button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 8px 11px;
+      padding: 9px 13px;
       color: #fff;
       background: var(--accent);
       border: 0;
@@ -370,10 +387,57 @@
       font-weight: 700;
     }
 
-    .episode-actions a { background: #383838; }
+    .episode-actions button:hover {
+      background: #e94e2b;
+    }
+
+    .player-area {
+      margin-top: 18px;
+    }
+
+    .player-area video,
+    .player-area iframe {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border: 0;
+      border-radius: 9px;
+    }
+
+    .player-title {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .bottom-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 25px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    footer {
+      margin-top: 50px;
+      padding: 28px 5%;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
 
     @media (max-width: 900px) {
-      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media (max-width: 700px) {
@@ -390,7 +454,9 @@
         gap: 17px;
       }
 
-      .banner { height: 245px; }
+      .banner {
+        height: 245px;
+      }
 
       .hero {
         grid-template-columns: 125px minmax(0, 1fr);
@@ -398,11 +464,26 @@
         margin-top: -75px;
       }
 
-      .details { padding-top: 78px; }
-      .eyebrow { letter-spacing: 2px; }
-      h1 { font-size: clamp(24px, 5vw, 34px); }
-      .description { font-size: 13px; line-height: 1.7; }
-      .section { padding: 17px; }
+      .details {
+        padding-top: 78px;
+      }
+
+      .eyebrow {
+        letter-spacing: 2px;
+      }
+
+      h1 {
+        font-size: clamp(24px, 5vw, 34px);
+      }
+
+      .description {
+        font-size: 13px;
+        line-height: 1.7;
+      }
+
+      .section {
+        padding: 17px;
+      }
 
       .poster-buttons .button {
         padding: 10px 5px;
@@ -411,32 +492,57 @@
     }
 
     @media (max-width: 520px) {
-      .logo { font-size: 20px; }
-      .nav-links { font-size: 12px; gap: 13px; }
+      .logo {
+        font-size: 20px;
+      }
+
+      .nav-links {
+        font-size: 12px;
+        gap: 13px;
+      }
 
       .hero {
         grid-template-columns: 100px minmax(0, 1fr);
         gap: 13px;
       }
 
-      .details { padding-top: 76px; }
-      .stats { gap: 8px; }
-      .stat { padding: 10px; }
-      .stat-value { font-size: 12px; }
+      .details {
+        padding-top: 76px;
+      }
 
-      .muse-search { flex-direction: column; }
+      .stats {
+        gap: 8px;
+      }
+
+      .stat {
+        padding: 10px;
+      }
+
+      .stat-value {
+        font-size: 12px;
+      }
 
       .episode-row {
         align-items: flex-start;
         flex-direction: column;
       }
 
-      .episode-thumb {
+      .episode-actions {
         width: 100%;
-        max-width: 230px;
       }
 
-      .episode-actions { width: 100%; }
+      .episode-actions button {
+        flex: 1;
+      }
+
+      .episode-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .episode-controls select {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -448,19 +554,16 @@
     <nav class="nav-links">
       <a href="anime.html">Explore Anime</a>
       <a href="index.html">Peerva Home</a>
-      <a href="https://www.youtube.com/@MuseAsia" target="_blank" rel="noopener noreferrer">
-        Muse Asia ↗
-      </a>
     </nav>
   </header>
 
-  <div class="banner" id="banner">
+  <div class="banner">
     <img id="bannerImage" alt="" hidden>
   </div>
 
   <main>
     <div id="loading" class="loading">
-      Searching Muse Asia's official YouTube channel…
+      Loading anime details…
     </div>
 
     <div id="pageContent" hidden>
@@ -469,7 +572,7 @@
           <img
             id="poster"
             class="poster"
-            alt="Anime video thumbnail"
+            alt="Anime poster"
             hidden
           >
 
@@ -479,113 +582,120 @@
               class="button"
               type="button"
               disabled
-            >▶ Watch on Peerva</button>
+            >
+              ▶ Watch episodes
+            </button>
 
             <a
               id="officialLink"
               class="button secondary"
-              href="https://www.youtube.com/@MuseAsia"
+              href="#"
               target="_blank"
               rel="noopener noreferrer"
-            >Open Muse Asia ↗</a>
+              hidden
+            >
+              AniList ↗
+            </a>
           </div>
         </aside>
 
         <div class="details">
-          <div class="eyebrow">Peerva Anime · Official uploads</div>
+          <div class="eyebrow">Peerva Anime</div>
 
           <h1 id="animeTitle">Anime</h1>
 
           <div id="description" class="description">
-            Search results from Muse Asia's official YouTube channel.
+            Loading anime information…
           </div>
 
-          <p class="source">
-            Videos are supplied by Muse Asia through YouTube. Availability
-            and embedding depend on the rights and settings for each video.
-          </p>
+          <div id="genres" class="genres"></div>
 
           <div class="stats">
             <div class="stat">
-              <span class="stat-label">Source</span>
-              <span class="stat-value">Muse Asia</span>
+              <span class="stat-label">Episodes listed</span>
+              <span class="stat-value" id="episodeCount">—</span>
             </div>
 
             <div class="stat">
-              <span class="stat-label">Video results</span>
-              <span class="stat-value" id="episodes">—</span>
-            </div>
-
-            <div class="stat">
-              <span class="stat-label">Region filter</span>
-              <span class="stat-value">Nigeria</span>
-            </div>
-
-            <div class="stat">
-              <span class="stat-label">Latest upload</span>
+              <span class="stat-label">Year</span>
               <span class="stat-value" id="year">—</span>
+            </div>
+
+            <div class="stat">
+              <span class="stat-label">Status</span>
+              <span class="stat-value" id="animeStatus">—</span>
+            </div>
+
+            <div class="stat">
+              <span class="stat-label">Rating</span>
+              <span class="stat-value" id="rating">—</span>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="section">
-        <h2>Find anime on Muse Asia</h2>
-
-        <form id="searchForm" class="muse-search">
-          <input
-            id="searchInput"
-            type="search"
-            maxlength="100"
-            placeholder="Enter an anime title…"
-            required
-          >
-
-          <button class="button" type="submit">Search</button>
-        </form>
+      <section class="section" id="episodesSection">
+        <h2>Episodes</h2>
 
         <p class="episode-help">
-          Peerva searches only Muse Asia's official YouTube channel and asks
-          YouTube to return videos available in Nigeria. Search results do
-          not guarantee that a video will play; YouTube can apply additional
-          restrictions.
+          These are the episodes that have been added to Peerva's authorised
+          video catalogue. An anime appearing in search does not necessarily
+          mean its episodes are available to watch yet.
         </p>
-      </section>
 
-      <section class="section">
-        <h2>Available episodes and videos</h2>
+        <div class="episode-controls">
+          <select id="seasonSelect" aria-label="Choose season" hidden>
+            <option value="1">Season 1</option>
+          </select>
+
+          <select id="languageSelect" aria-label="Choose language">
+            <option value="all">All languages</option>
+            <option value="sub">Subtitles</option>
+            <option value="dub">English dub</option>
+            <option value="both">Sub and dub</option>
+          </select>
+        </div>
 
         <div id="episodeStatus" class="status" role="status">
-          Loading official Muse Asia videos…
+          Loading episodes…
         </div>
 
         <div id="episodeList" class="episode-list"></div>
       </section>
 
-      <section class="section">
+      <section class="section" id="playerSection">
         <h2>Watch on Peerva</h2>
 
         <div id="watchStatus" class="status" role="status">
-          Choose an official Muse Asia video below.
+          Select an available episode to start watching.
         </div>
 
-        <div id="videoArea" hidden>
-          <iframe
-            id="youtubePlayer"
-            title="Official Muse Asia anime video"
+        <div id="playerArea" class="player-area" hidden>
+          <h3 id="playerTitle" class="player-title"></h3>
+
+          <video
+            id="videoPlayer"
+            controls
+            playsinline
+            preload="metadata"
             hidden
+          >
+            Your browser does not support HTML video.
+          </video>
+
+          <iframe
+            id="embedPlayer"
+            title="Authorised anime video player"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             referrerpolicy="strict-origin-when-cross-origin"
             allowfullscreen
-            style="width:100%;aspect-ratio:16/9;border:0;background:#000;border-radius:8px;margin-top:18px"
+            hidden
           ></iframe>
         </div>
       </section>
     </div>
 
-    <div id="errorBox" class="status error" hidden>
-      Could not load this anime. Return to the catalogue and try again.
-    </div>
+    <div id="errorBox" class="status error" hidden></div>
 
     <div class="bottom-links">
       <a href="anime.html">← Back to anime catalogue</a>
@@ -595,228 +705,152 @@
 
   <footer>
     <strong>PEERVA ANIME</strong><br>
-    Official anime videos from Muse Asia's YouTube channel.<br>
-    Video availability is controlled by YouTube and the rights holder.
+    Anime information powered by AniList.<br>
+    Video playback is provided only for authorised episodes added to Peerva.
   </footer>
 
   <script>
     "use strict";
 
+    /*
+      IMPORTANT:
+      This must be the same Render backend URL used in anime.html.
+    */
     const PEERVA_BACKEND = "https://parva-backend-49br.onrender.com";
-    const MUSE_ASIA_CHANNEL_URL = "https://www.youtube.com/@MuseAsia";
 
     const $ = id => document.getElementById(id);
+
     const params = new URLSearchParams(window.location.search);
 
-    let currentVideos = [];
+    const anilistId = params.get("animeId") || params.get("id") || "";
+    const catalogueId = params.get("catalogueId") || "";
+    const suppliedTitle =
+      params.get("title") ||
+      params.get("name") ||
+      "Anime";
 
-    function showError(message) {
+    const suppliedPoster = params.get("poster") || "";
+
+    let allEpisodes = [];
+    let currentSeason = Number(params.get("season")) || 1;
+    let currentEpisode = null;
+    let currentMedia = null;
+
+    function setStatus(message, isError = false) {
+      $("episodeStatus").textContent = message;
+      $("episodeStatus").classList.toggle("error", isError);
+    }
+
+    function setWatchStatus(message, isError = false) {
+      $("watchStatus").textContent = message;
+      $("watchStatus").classList.toggle("error", isError);
+    }
+
+    function showPageError(message) {
       $("loading").hidden = true;
       $("pageContent").hidden = true;
       $("errorBox").hidden = false;
       $("errorBox").textContent = message;
     }
 
-    function validVideoId(value) {
-      return typeof value === "string" &&
-        /^[A-Za-z0-9_-]{11}$/.test(value);
-    }
-
-    function formatDate(value) {
-      if (!value) return "Date unavailable";
-
-      const date = new Date(value);
-
-      return Number.isNaN(date.getTime())
-        ? "Date unavailable"
-        : date.toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric"
-          });
-    }
-
-    function playVideo(video) {
-      if (!video || !validVideoId(video.videoId)) return;
-
-      const frame = $("youtubePlayer");
-
-      frame.src =
-        `https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.videoId)}?autoplay=1&rel=0&playsinline=1`;
-
-      frame.title = video.title || "Muse Asia anime video";
-      frame.hidden = false;
-      $("videoArea").hidden = false;
-
-      $("watchStatus").textContent =
-        `Playing: ${video.title}. If YouTube reports that the video is unavailable, it may be restricted in your country or embedding may be disabled.`;
-
-      $("videoArea").scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }
-
-    function renderVideos(videos) {
-      const list = $("episodeList");
-
-      list.replaceChildren();
-      currentVideos = videos;
-
-      $("episodes").textContent = String(videos.length);
-      $("watchButton").disabled = videos.length === 0;
-
-      if (!videos.length) {
-        $("episodeStatus").textContent =
-          "No Muse Asia videos were returned for this title in the Nigeria region search. This may be because the title is not on the channel or its licensing does not cover Nigeria.";
-
-        $("watchStatus").textContent =
-          "No playable video was found. You can still open Muse Asia's official channel.";
-
-        $("year").textContent = "—";
-        $("poster").hidden = true;
-        $("bannerImage").hidden = true;
-        $("watchButton").onclick = null;
-
-        return;
+    function safeHttpsUrl(value) {
+      if (typeof value !== "string" || !value.trim()) {
+        return null;
       }
 
-      $("episodeStatus").textContent =
-        `${videos.length} official Muse Asia video${videos.length === 1 ? "" : "s"} found. Select one to play.`;
+      try {
+        const url = new URL(value);
 
-      const dates = videos
-        .map(video => video.publishedAt)
-        .filter(Boolean)
-        .sort();
+        if (url.protocol !== "https:") {
+          return null;
+        }
 
-      const latest = dates.length ? dates[dates.length - 1] : null;
-
-      $("year").textContent = latest
-        ? new Date(latest).getFullYear()
-        : "—";
-
-      if (videos[0].thumbnail) {
-        $("poster").src = videos[0].thumbnail;
-        $("poster").alt = `${$("animeTitle").textContent} thumbnail`;
-        $("poster").hidden = false;
-
-        $("bannerImage").src = videos[0].thumbnail;
-        $("bannerImage").hidden = false;
+        return url.href;
+      } catch (_) {
+        return null;
       }
-
-      videos.forEach((video, index) => {
-        if (!validVideoId(video.videoId)) return;
-
-        const row = document.createElement("article");
-        row.className = "episode-row";
-
-        const image = document.createElement("img");
-        image.className = "episode-thumb";
-        image.loading = "lazy";
-        image.alt = "";
-        image.src = video.thumbnail || "";
-        image.onerror = () => image.remove();
-
-        const meta = document.createElement("div");
-        meta.className = "episode-meta";
-
-        const number = document.createElement("div");
-        number.className = "episode-number";
-        number.textContent = `MUSE ASIA VIDEO ${index + 1}`;
-
-        const title = document.createElement("div");
-        title.className = "episode-title";
-        title.textContent = video.title || "Untitled video";
-
-        const date = document.createElement("div");
-        date.className = "episode-help";
-        date.textContent = `Published: ${formatDate(video.publishedAt)}`;
-
-        meta.append(number, title, date);
-
-        const actions = document.createElement("div");
-        actions.className = "episode-actions";
-
-        const play = document.createElement("button");
-        play.type = "button";
-        play.textContent = "▶ Play";
-        play.addEventListener("click", () => playVideo(video));
-
-        const youtube = document.createElement("a");
-        youtube.href =
-          video.watchUrl ||
-          `https://www.youtube.com/watch?v=${encodeURIComponent(video.videoId)}`;
-
-        youtube.target = "_blank";
-        youtube.rel = "noopener noreferrer";
-        youtube.textContent = "YouTube ↗";
-
-        actions.append(play, youtube);
-        row.append(image, meta, actions);
-
-        list.append(row);
-      });
-
-      $("watchButton").onclick = () => {
-        const firstPlayable = currentVideos.find(video =>
-          validVideoId(video.videoId)
-        );
-
-        if (firstPlayable) playVideo(firstPlayable);
-      };
-
-      $("watchStatus").textContent =
-        "Choose an episode or video to start watching.";
     }
 
-    async function searchMuseAsia(title) {
-      const cleanTitle = String(title || "").trim();
+    function decodeHtml(value) {
+      const element = document.createElement("textarea");
+      element.innerHTML = String(value || "");
+      return element.value;
+    }
 
-      if (cleanTitle.length < 2 || cleanTitle.length > 100) {
-        throw new Error(
-          "The anime title is missing or invalid. Open this page using anime-details.html?title=Anime%20Name."
-        );
+    function cleanDescription(value) {
+      return decodeHtml(
+        String(value || "")
+          .replace(/<br\s*\/?>/gi, "\n")
+          .replace(/<\/p>/gi, "\n\n")
+          .replace(/<[^>]*>/g, "")
+      ).trim();
+    }
+
+    function formatStatus(value) {
+      if (!value) return "Unknown";
+
+      return String(value)
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, character => character.toUpperCase());
+    }
+
+    function formatLanguage(value) {
+      const language = String(value || "").toLowerCase();
+
+      if (language === "sub") return "Subtitles";
+      if (language === "dub") return "English dub";
+      if (language === "both") return "Sub and dub";
+
+      return "Other";
+    }
+
+    function getMediaObject(result) {
+      if (!result || typeof result !== "object") {
+        return null;
       }
 
-      $("loading").hidden = false;
-      $("loading").textContent =
-        `Searching Muse Asia for “${cleanTitle}”…`;
+      if (result.media) return result.media;
+      if (result.anime) return result.anime;
+      if (result.data && result.data.Media) return result.data.Media;
+      if (result.data && result.data.media) return result.data.media;
 
-      $("errorBox").hidden = true;
-      $("pageContent").hidden = false;
+      return result;
+    }
 
-      $("animeTitle").textContent = cleanTitle;
-      $("searchInput").value = cleanTitle;
+    function getEpisodesArray(result) {
+      if (Array.isArray(result)) return result;
+      if (Array.isArray(result.episodes)) return result.episodes;
+      if (Array.isArray(result.data)) return result.data;
+      if (result.data && Array.isArray(result.data.episodes)) {
+        return result.data.episodes;
+      }
 
-      document.title = `${cleanTitle} — Peerva Anime`;
+      return [];
+    }
 
-      $("officialLink").href = MUSE_ASIA_CHANNEL_URL;
+    function getStreamObject(result) {
+      if (!result || typeof result !== "object") {
+        return null;
+      }
 
-      $("description").textContent =
-        `Official YouTube search results for ${cleanTitle} from Muse Asia. Only videos returned by YouTube's Nigeria-region search are listed.`;
+      if (result.episode) return result.episode;
+      if (result.stream) return result.stream;
+      if (result.data && result.data.episode) return result.data.episode;
+      if (result.data && result.data.stream) return result.data.stream;
 
-      $("episodes").textContent = "…";
-      $("year").textContent = "—";
+      return result;
+    }
 
-      $("episodeStatus").textContent =
-        "Searching Muse Asia's official channel…";
-
-      $("episodeList").replaceChildren();
-
-      $("watchStatus").textContent =
-        "Waiting for available videos…";
-
-      $("videoArea").hidden = true;
-      $("youtubePlayer").hidden = true;
-      $("youtubePlayer").src = "";
-
-      $("poster").hidden = true;
-      $("bannerImage").hidden = true;
-
-      $("watchButton").disabled = true;
-
+    async function apiRequest(path) {
       const response = await fetch(
-        `${PEERVA_BACKEND}/api/museasia/videos?q=${encodeURIComponent(cleanTitle)}`
+        `${PEERVA_BACKEND}${path}`,
+        {
+          method: "GET",
+          headers: {
+            "Accept": "application/json"
+          }
+        }
       );
 
       const result = await response.json().catch(() => ({}));
@@ -824,61 +858,514 @@
       if (!response.ok) {
         throw new Error(
           result.message ||
-          `Peerva backend returned HTTP ${response.status}.`
+          result.error ||
+          `Backend request failed with HTTP ${response.status}.`
         );
       }
 
-      renderVideos(
-        Array.isArray(result.videos) ? result.videos : []
+      return result;
+    }
+
+    function renderMedia(media) {
+      if (!media) return;
+
+      currentMedia = media;
+
+      const titleObject = media.title || {};
+
+      const title =
+        titleObject.english ||
+        titleObject.romaji ||
+        titleObject.native ||
+        suppliedTitle;
+
+      $("animeTitle").textContent = title;
+      document.title = `${title} — Peerva Anime`;
+
+      $("description").textContent =
+        cleanDescription(media.description) ||
+        "No description is available for this anime.";
+
+      const cover =
+        media.coverImage?.extraLarge ||
+        media.coverImage?.large ||
+        media.coverImage?.medium ||
+        suppliedPoster;
+
+      const banner = media.bannerImage || "";
+
+      const safeCover = safeHttpsUrl(cover);
+      const safeBanner = safeHttpsUrl(banner);
+
+      if (safeCover) {
+        $("poster").src = safeCover;
+        $("poster").hidden = false;
+      }
+
+      if (safeBanner) {
+        $("bannerImage").src = safeBanner;
+        $("bannerImage").hidden = false;
+      } else if (safeCover) {
+        $("bannerImage").src = safeCover;
+        $("bannerImage").hidden = false;
+      }
+
+      const genres = Array.isArray(media.genres)
+        ? media.genres
+        : [];
+
+      $("genres").replaceChildren();
+
+      genres.forEach(genre => {
+        const tag = document.createElement("span");
+        tag.className = "genre";
+        tag.textContent = genre;
+        $("genres").append(tag);
+      });
+
+      const seasonYear =
+        media.seasonYear ||
+        media.startDate?.year ||
+        "—";
+
+      $("year").textContent = seasonYear;
+
+      $("animeStatus").textContent =
+        formatStatus(media.status);
+
+      $("rating").textContent =
+        media.averageScore
+          ? `${media.averageScore}%`
+          : "Not rated";
+
+      const officialUrl = safeHttpsUrl(media.siteUrl);
+
+      if (officialUrl) {
+        $("officialLink").href = officialUrl;
+        $("officialLink").hidden = false;
+      }
+    }
+
+    function getEpisodeNumber(episode) {
+      return Number(
+        episode.episodeNumber ??
+        episode.number ??
+        episode.episode ??
+        0
       );
+    }
+
+    function getEpisodeSeason(episode) {
+      return Number(episode.season || 1);
+    }
+
+    function renderEpisodes() {
+      const list = $("episodeList");
+      list.replaceChildren();
+
+      const selectedLanguage = $("languageSelect").value;
+
+      const filtered = allEpisodes.filter(episode => {
+        const language = String(
+          episode.language || "other"
+        ).toLowerCase();
+
+        const matchesSeason =
+          getEpisodeSeason(episode) === currentSeason;
+
+        const matchesLanguage =
+          selectedLanguage === "all" ||
+          language === selectedLanguage;
+
+        return matchesSeason && matchesLanguage;
+      });
+
+      $("episodeCount").textContent = String(allEpisodes.length);
+
+      if (!filtered.length) {
+        setStatus(
+          allEpisodes.length
+            ? "No episodes match this season and language filter."
+            : "No episodes have been added to Peerva's authorised catalogue for this anime yet."
+        );
+
+        return;
+      }
+
+      setStatus(
+        `${filtered.length} episode${filtered.length === 1 ? "" : "s"} available.`
+      );
+
+      filtered.sort((a, b) => {
+        return getEpisodeNumber(a) - getEpisodeNumber(b);
+      });
+
+      filtered.forEach(episode => {
+        const row = document.createElement("article");
+        row.className = "episode-row";
+
+        const number = document.createElement("div");
+        number.className = "episode-number";
+
+        const episodeNumber = getEpisodeNumber(episode);
+
+        number.textContent =
+          `SEASON ${getEpisodeSeason(episode)} · EPISODE ${episodeNumber}`;
+
+        const title = document.createElement("div");
+        title.className = "episode-title";
+        title.textContent =
+          episode.episodeTitle ||
+          episode.title ||
+          `Episode ${episodeNumber}`;
+
+        const extra = document.createElement("div");
+        extra.className = "episode-extra";
+
+        const duration = episode.durationMinutes
+          ? `${episode.durationMinutes} minutes`
+          : "";
+
+        const language = formatLanguage(episode.language);
+
+        extra.textContent = [language, duration]
+          .filter(Boolean)
+          .join(" · ");
+
+        const meta = document.createElement("div");
+        meta.className = "episode-meta";
+        meta.append(number, title, extra);
+
+        const actions = document.createElement("div");
+        actions.className = "episode-actions";
+
+        const playButton = document.createElement("button");
+        playButton.type = "button";
+        playButton.textContent = "▶ Play";
+
+        playButton.addEventListener("click", () => {
+          playEpisode(episode, row);
+        });
+
+        actions.append(playButton);
+        row.append(meta, actions);
+        list.append(row);
+      });
+    }
+
+    function renderSeasonOptions() {
+      const select = $("seasonSelect");
+
+      const seasons = [
+        ...new Set(
+          allEpisodes.map(getEpisodeSeason)
+        )
+      ].sort((a, b) => a - b);
+
+      select.replaceChildren();
+
+      seasons.forEach(season => {
+        const option = document.createElement("option");
+        option.value = String(season);
+        option.textContent = `Season ${season}`;
+        select.append(option);
+      });
+
+      if (seasons.length > 1) {
+        select.hidden = false;
+      } else {
+        select.hidden = true;
+      }
+
+      if (seasons.includes(currentSeason)) {
+        select.value = String(currentSeason);
+      } else {
+        currentSeason = seasons[0] || 1;
+        select.value = String(currentSeason);
+      }
+    }
+
+    async function loadAnimeDetails() {
+      if (!/^\d+$/.test(anilistId)) {
+        throw new Error(
+          "The AniList anime ID is missing. Open this page from the Peerva Anime catalogue."
+        );
+      }
+
+      const result = await apiRequest(
+        `/api/anime/details/${encodeURIComponent(anilistId)}`
+      );
+
+      const media = getMediaObject(result);
+
+      if (!media) {
+        throw new Error("The anime details could not be found.");
+      }
+
+      renderMedia(media);
+    }
+
+    async function loadEpisodes() {
+      if (!catalogueId) {
+        allEpisodes = [];
+        $("episodeCount").textContent = "0";
+        $("watchButton").disabled = true;
+
+        setStatus(
+          "This anime has not been connected to an episode catalogue yet. Episodes will appear here after authorised videos are added by the Peerva administrator."
+        );
+
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_-]+$/.test(catalogueId)) {
+        throw new Error("The anime catalogue ID is invalid.");
+      }
+
+      setStatus("Loading available episodes…");
+
+      const result = await apiRequest(
+        `/api/anime/${encodeURIComponent(catalogueId)}/episodes`
+      );
+
+      allEpisodes = getEpisodesArray(result);
+
+      $("watchButton").disabled = allEpisodes.length === 0;
+
+      renderSeasonOptions();
+      renderEpisodes();
+    }
+
+    function stopCurrentPlayer() {
+      const video = $("videoPlayer");
+      const iframe = $("embedPlayer");
+
+      video.pause();
+      video.removeAttribute("src");
+      video.querySelectorAll("track").forEach(track => track.remove());
+      video.load();
+
+      iframe.src = "about:blank";
+
+      video.hidden = true;
+      iframe.hidden = true;
+      $("playerArea").hidden = true;
+
+      currentEpisode = null;
+    }
+
+    function getVideoUrl(stream) {
+      return (
+        stream.videoUrl ||
+        stream.streamUrl ||
+        stream.url ||
+        stream.embedUrl ||
+        ""
+      );
+    }
+
+    async function playEpisode(episode, selectedRow) {
+      if (!catalogueId) {
+        setWatchStatus(
+          "This anime does not have a Peerva episode catalogue yet.",
+          true
+        );
+        return;
+      }
+
+      const episodeNumber = getEpisodeNumber(episode);
+      const season = getEpisodeSeason(episode);
+
+      if (!episodeNumber || !Number.isFinite(episodeNumber)) {
+        setWatchStatus("This episode has an invalid episode number.", true);
+        return;
+      }
+
+      stopCurrentPlayer();
+
+      document.querySelectorAll(".episode-row").forEach(row => {
+        row.classList.remove("active");
+      });
+
+      if (selectedRow) {
+        selectedRow.classList.add("active");
+      }
+
+      $("playerTitle").textContent =
+        episode.episodeTitle ||
+        episode.title ||
+        `Episode ${episodeNumber}`;
+
+      $("playerArea").hidden = false;
+
+      setWatchStatus("Loading authorised episode stream…");
+
+      $("playerSection").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+
+      try {
+        const result = await apiRequest(
+          `/api/anime/${encodeURIComponent(catalogueId)}/episode/${episodeNumber}/streams?season=${season}`
+        );
+
+        const stream = getStreamObject(result);
+
+        if (!stream) {
+          throw new Error("No stream information was returned.");
+        }
+
+        const videoUrl = safeHttpsUrl(getVideoUrl(stream));
+
+        if (!videoUrl) {
+          throw new Error(
+            "The episode does not have a valid HTTPS video URL."
+          );
+        }
+
+        const sourceType = String(
+          stream.sourceType ||
+          episode.sourceType ||
+          "direct"
+        ).toLowerCase();
+
+        if (sourceType === "embed") {
+          const iframe = $("embedPlayer");
+
+          iframe.src = videoUrl;
+          iframe.title =
+            episode.episodeTitle ||
+            `Episode ${episodeNumber}`;
+
+          iframe.hidden = false;
+          $("playerArea").hidden = false;
+
+          setWatchStatus(
+            "The authorised episode embed has been loaded. If it does not play, the video provider may restrict embedding."
+          );
+        } else {
+          const video = $("videoPlayer");
+
+          video.src = videoUrl;
+
+          const subtitleUrl = safeHttpsUrl(
+            stream.subtitlesUrl ||
+            episode.subtitlesUrl ||
+            ""
+          );
+
+          if (subtitleUrl) {
+            const track = document.createElement("track");
+            track.kind = "subtitles";
+            track.label = "English";
+            track.srclang = "en";
+            track.src = subtitleUrl;
+            track.default = true;
+            video.append(track);
+          }
+
+          video.hidden = false;
+          $("playerArea").hidden = false;
+
+          const playPromise = video.play();
+
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(() => {
+              setWatchStatus(
+                "The video is loaded. Press the play button in the player to start."
+              );
+            });
+          }
+
+          setWatchStatus(
+            "The authorised episode is ready. Use the player controls to watch."
+          );
+        }
+
+        currentEpisode = episode;
+
+      } catch (error) {
+        console.error("Episode playback error:", error);
+
+        stopCurrentPlayer();
+
+        setWatchStatus(
+          error.message ||
+          "Could not load this episode. Please try another episode.",
+          true
+        );
+      }
+    }
+
+    $("seasonSelect").addEventListener("change", event => {
+      currentSeason = Number(event.target.value) || 1;
+      renderEpisodes();
+    });
+
+    $("languageSelect").addEventListener("change", () => {
+      renderEpisodes();
+    });
+
+    $("watchButton").addEventListener("click", () => {
+      const firstEpisode = allEpisodes
+        .filter(episode => getEpisodeSeason(episode) === currentSeason)
+        .sort((a, b) => getEpisodeNumber(a) - getEpisodeNumber(b))[0];
+
+      if (!firstEpisode) {
+        setWatchStatus("There are no episodes available to play.", true);
+        return;
+      }
+
+      const rows = [...document.querySelectorAll(".episode-row")];
+
+      const selectedRow = rows[0] || null;
+
+      playEpisode(firstEpisode, selectedRow);
+    });
+
+    async function startPage() {
+      $("animeTitle").textContent = suppliedTitle;
+
+      const safePoster = safeHttpsUrl(suppliedPoster);
+
+      if (safePoster) {
+        $("poster").src = safePoster;
+        $("poster").hidden = false;
+      }
+
+      $("pageContent").hidden = false;
+
+      try {
+        await loadAnimeDetails();
+      } catch (error) {
+        console.error("Anime details error:", error);
+
+        $("animeTitle").textContent = suppliedTitle;
+        $("description").textContent =
+          "Anime details could not be loaded. You can still check whether Peerva has episodes available.";
+
+        $("status")?.remove();
+      }
+
+      try {
+        await loadEpisodes();
+      } catch (error) {
+        console.error("Episode catalogue error:", error);
+
+        setStatus(
+          error.message ||
+          "Could not load episodes from the Peerva backend.",
+          true
+        );
+      }
 
       $("loading").hidden = true;
     }
 
-    $("searchForm").addEventListener("submit", event => {
-      event.preventDefault();
-
-      const title = $("searchInput").value.trim();
-
-      if (!title) return;
-
-      const nextUrl = new URL(window.location.href);
-
-      nextUrl.searchParams.set("title", title);
-      nextUrl.searchParams.delete("id");
-
-      window.history.replaceState({}, "", nextUrl);
-
-      searchMuseAsia(title).catch(error => {
-        console.error("Muse Asia search failed:", error);
-        showError(error.message);
-      });
-    });
-
-    const initialTitle =
-      params.get("title") ||
-      params.get("name") ||
-      params.get("q") ||
-      "";
-
-    const suppliedPoster = params.get("poster");
-
-    if (suppliedPoster) {
-      try {
-        const posterUrl = new URL(suppliedPoster);
-
-        if (posterUrl.protocol === "https:") {
-          $("poster").src = posterUrl.toString();
-          $("poster").hidden = false;
-        }
-      } catch (_) {
-        // Ignore invalid optional poster URLs.
-      }
-    }
-
-    searchMuseAsia(initialTitle).catch(error => {
-      console.error("Peerva Muse Asia details error:", error);
-      showError(error.message);
+    startPage().catch(error => {
+      console.error("Peerva Anime page error:", error);
+      showPageError(error.message || "Could not load this anime.");
     });
   </script>
 </body>
