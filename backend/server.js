@@ -1739,7 +1739,70 @@ app.get("/api/animedoc/playback-status", (req, res) => {
             "the relevant distribution and embedding permissions."
     });
 });
+/* =========================================================
+   ANIMEDOC MEDIA SOURCES
 
+   GET /api/animedoc/media-sources
+   Example:
+   /api/animedoc/media-sources?subjectId=123&detailPath=naruto&se=1&ep=1
+
+   This retrieves source information only.
+   It does NOT bypass AnimeDoc's paid stream proxy.
+========================================================= */
+
+app.get("/api/animedoc/media-sources", async (req, res) => {
+    try {
+        const subjectId = String(req.query.subjectId || "").trim();
+        const detailPath = String(req.query.detailPath || "").trim();
+
+        const season = Math.max(1, Number(req.query.se) || 1);
+        const episode = Number(req.query.ep);
+
+        if (!subjectId || !detailPath) {
+            return res.status(400).json({
+                success: false,
+                message: "subjectId and detailPath are required."
+            });
+        }
+
+        if (
+            subjectId.length > 100 ||
+            detailPath.length > 300 ||
+            !Number.isInteger(episode) ||
+            episode < 1
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid anime or episode information."
+            });
+        }
+
+        const params = new URLSearchParams({
+            subjectId,
+            detailPath,
+            se: String(season),
+            ep: String(episode)
+        });
+
+        const payload = await animeDocRequest(
+            `/api/v2/anime/media-sources/?${params}`
+        );
+
+        return res.json({
+            success: true,
+            provider: "AnimeDoc",
+            playbackEnabled: false,
+            message:
+                "Sources retrieved where permitted. " +
+                "Direct playback requires a supported streaming method " +
+                "and the appropriate distribution permissions.",
+            data: payload.data || null
+        });
+
+    } catch (error) {
+        return sendAnimeDocError(res, error);
+    }
+});
 /* =========================================================
    ERROR HANDLING
 ========================================================= */
