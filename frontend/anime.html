@@ -128,6 +128,10 @@ main{width:min(1250px,92%);margin:auto}
   border:1px solid #444;
 }
 .button.secondary:hover{background:#3b3b3b}
+.button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
 
 .section-heading{
   display:flex;
@@ -278,6 +282,7 @@ main{width:min(1250px,92%);margin:auto}
 }
 .details-layout a{color:var(--accent)}
 .details-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+
 footer{
   margin-top:50px;
   padding:28px 5%;
@@ -375,8 +380,8 @@ footer{
   </div>
 
   <div class="tabs">
-    <button class="tab active" data-type="trending">Trending</button>
-    <button class="tab" data-type="popular">Popular</button>
+    <button class="tab active" data-type="trending" type="button">Trending</button>
+    <button class="tab" data-type="popular" type="button">Popular</button>
   </div>
 
   <p class="catalogue-note">
@@ -409,7 +414,6 @@ footer{
       <p id="detailsMeta"></p>
       <p id="detailsDescription"></p>
       <p id="detailsAvailability"></p>
-
       <div class="details-actions" id="detailsActions"></div>
     </div>
   </div>
@@ -431,9 +435,9 @@ footer{
 <script>
 "use strict";
 
-/* =====================================================
+/* =========================================
    PEERVA BACKEND
-===================================================== */
+========================================= */
 
 const PEERVA_BACKEND = "https://parva-backend-49br.onrender.com";
 
@@ -449,9 +453,9 @@ const state = {
   tab: "trending"
 };
 
-/* =====================================================
-   API REQUEST HELPER
-===================================================== */
+/* =========================================
+   API REQUEST
+========================================= */
 
 async function apiRequest(path) {
   const response = await fetch(
@@ -469,6 +473,7 @@ async function apiRequest(path) {
   if (!response.ok) {
     throw new Error(
       data.message ||
+      data.error ||
       `Server returned HTTP ${response.status}`
     );
   }
@@ -476,9 +481,37 @@ async function apiRequest(path) {
   return data;
 }
 
-/* =====================================================
+/* =========================================
+   RESPONSE NORMALISATION
+========================================= */
+
+function getAnimeArray(result) {
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result.anime)) return result.anime;
+  if (Array.isArray(result.results)) return result.results;
+  if (Array.isArray(result.media)) return result.media;
+  if (Array.isArray(result.data)) return result.data;
+
+  if (result.data && Array.isArray(result.data.Page?.media)) {
+    return result.data.Page.media;
+  }
+
+  return [];
+}
+
+function getCatalogueArray(result) {
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result.anime)) return result.anime;
+  if (Array.isArray(result.catalogue)) return result.catalogue;
+  if (Array.isArray(result.items)) return result.items;
+  if (Array.isArray(result.data)) return result.data;
+
+  return [];
+}
+
+/* =========================================
    STATUS
-===================================================== */
+========================================= */
 
 function setStatus(message, isError = false) {
   const box = $("status");
@@ -488,87 +521,199 @@ function setStatus(message, isError = false) {
   box.style.display = "block";
 }
 
-/* =====================================================
-   TEXT HELPERS
-===================================================== */
-
-function cleanDescription(value) {
-  const temporary = document.createElement("div");
-
-  temporary.innerHTML = String(value || "");
-
-  return (temporary.textContent || temporary.innerText || "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+/* =========================================
+   ANIME DATA HELPERS
+========================================= */
 
 function getTitle(anime) {
-  return anime.title ||
+  if (typeof anime.title === "string" && anime.title.trim()) {
+    return anime.title;
+  }
+
+  if (anime.title && typeof anime.title === "object") {
+    return (
+      anime.title.english ||
+      anime.title.romaji ||
+      anime.title.native ||
+      "Unknown anime"
+    );
+  }
+
+  return (
     anime.titles?.english ||
     anime.titles?.romaji ||
-    "Unknown anime";
-}
-
-function getYear(anime) {
-  return anime.seasonYear || "Year unknown";
+    anime.titles?.native ||
+    "Unknown anime"
+  );
 }
 
 function getPoster(anime) {
-  return anime.poster || "";
+  return (
+    anime.poster ||
+    anime.coverImage?.extraLarge ||
+    anime.coverImage?.large ||
+    anime.coverImage?.medium ||
+    anime.image ||
+    ""
+  );
+}
+
+function getBanner(anime) {
+  return anime.bannerImage || "";
+}
+
+function getYear(anime) {
+  return (
+    anime.seasonYear ||
+    anime.startDate?.year ||
+    "Year unknown"
+  );
+}
+
+function getFormat(anime) {
+  return anime.format || "ANIME";
+}
+
+function getScore(anime) {
+  const score = anime.score ?? anime.averageScore;
+
+  if (!score) return "";
+
+  const number = Number(score);
+
+  if (!Number.isFinite(number)) return "";
+
+  return `⭐ ${(number / 10).toFixed(1)}`;
+}
+
+function getGenres(anime) {
+  return Array.isArray(anime.genres)
+    ? anime.genres
+    : [];
+}
+
+function getDescription(anime) {
+  const value = anime.description || "";
+
+  const temporary = document.createElement("div");
+  temporary.innerHTML = String(value);
+
+  return (
+    temporary.textContent ||
+    temporary.innerText ||
+    ""
+  ).replace(/\s+/g, " ").trim();
 }
 
 function formatMeta(anime) {
   const parts = [];
 
   if (anime.format) parts.push(anime.format);
-  if (anime.seasonYear) parts.push(anime.seasonYear);
-  if (anime.episodes) parts.push(`${anime.episodes} episodes`);
+  if (getYear(anime) !== "Year unknown") parts.push(getYear(anime));
+
+  if (anime.episodes) {
+    parts.push(`${anime.episodes} episodes`);
+  }
 
   return parts.join(" · ") || "Anime";
 }
 
-/* =====================================================
-   FIND EPISODES ALREADY ADDED TO PEERVA
-===================================================== */
+/* =========================================
+   SAFE URL
+========================================= */
 
-function findCatalogueEntry(anime) {
-  return state.catalogue.find(item =>
-    Number(item.anilistId) === Number(anime.id)
-  ) || null;
+function safeHttpsUrl(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return "";
+  }
+
+  try {
+    const url = new URL(value);
+
+    if (url.protocol !== "https:") {
+      return "";
+    }
+
+    return url.href;
+  } catch (_) {
+    return "";
+  }
 }
 
-/* =====================================================
+/* =========================================
+   FIND PEERVA CATALOGUE ENTRY
+========================================= */
+
+function findCatalogueEntry(anime) {
+  return state.catalogue.find(item => {
+    return Number(item.anilistId) === Number(anime.id);
+  }) || null;
+}
+
+/* =========================================
+   DETAILS PAGE URL
+========================================= */
+
+function getDetailsUrl(anime, catalogueEntry = null) {
+  const title = getTitle(anime);
+  const poster = getPoster(anime);
+
+  const params = new URLSearchParams();
+
+  params.set("animeId", String(anime.id));
+  params.set("title", title);
+
+  if (catalogueEntry?.animeId) {
+    params.set("catalogueId", String(catalogueEntry.animeId));
+  }
+
+  if (poster) {
+    params.set("poster", poster);
+  }
+
+  return `anime-details.html?${params.toString()}`;
+}
+
+/* =========================================
    LOAD PEERVA EPISODE CATALOGUE
-===================================================== */
+========================================= */
 
 async function loadCatalogue() {
   try {
     const result = await apiRequest("/api/anime");
 
-    state.catalogue = Array.isArray(result.anime)
-      ? result.anime
-      : [];
+    state.catalogue = getCatalogueArray(result);
 
   } catch (error) {
-    console.warn("Could not load Peerva episode catalogue:", error);
+    console.warn(
+      "Could not load Peerva episode catalogue:",
+      error
+    );
+
     state.catalogue = [];
   }
 }
 
-/* =====================================================
+/* =========================================
    RENDER ANIME CARDS
-===================================================== */
+========================================= */
 
 function renderAnime(animeList) {
   grid.replaceChildren();
 
+  const validAnime = animeList.filter(anime =>
+    anime &&
+    anime.id &&
+    Number.isFinite(Number(anime.id))
+  );
+
   $("emptyMessage").style.display =
-    animeList.length ? "none" : "block";
+    validAnime.length ? "none" : "block";
 
   $("resultCount").textContent =
-    `${animeList.length} anime found`;
+    `${validAnime.length} anime found`;
 
-  if (!animeList.length) {
+  if (!validAnime.length) {
     $("emptyMessage").querySelector("p").textContent =
       state.search
         ? "No anime matched your search. Try another title."
@@ -577,10 +722,9 @@ function renderAnime(animeList) {
     return;
   }
 
-  animeList.forEach(anime => {
-    if (!anime || !anime.id) return;
-
+  validAnime.forEach(anime => {
     const titleText = getTitle(anime);
+    const posterUrl = safeHttpsUrl(getPoster(anime));
     const catalogueEntry = findCatalogueEntry(anime);
 
     const card = document.createElement("article");
@@ -589,13 +733,17 @@ function renderAnime(animeList) {
     const poster = document.createElement("div");
     poster.className = "poster";
 
-    const image = document.createElement("img");
-    image.src = getPoster(anime);
-    image.alt = titleText;
-    image.loading = "lazy";
-    image.onerror = () => image.remove();
+    if (posterUrl) {
+      const image = document.createElement("img");
 
-    if (getPoster(anime)) {
+      image.src = posterUrl;
+      image.alt = titleText;
+      image.loading = "lazy";
+      image.onerror = () => {
+        image.remove();
+        poster.textContent = "⛩️";
+      };
+
       poster.appendChild(image);
     } else {
       poster.textContent = "⛩️";
@@ -603,7 +751,7 @@ function renderAnime(animeList) {
 
     const tag = document.createElement("span");
     tag.className = "format-tag";
-    tag.textContent = anime.format || "ANIME";
+    tag.textContent = getFormat(anime);
 
     poster.appendChild(tag);
 
@@ -617,44 +765,38 @@ function renderAnime(animeList) {
     const meta = document.createElement("div");
     meta.className = "meta";
 
-    const score = anime.score
-      ? `⭐ ${(anime.score / 10).toFixed(1)}`
-      : "";
-
     meta.textContent = [
       formatMeta(anime),
-      score
+      getScore(anime)
     ].filter(Boolean).join(" · ");
 
     const actions = document.createElement("div");
     actions.className = "card-actions";
 
-    const detailsButton = document.createElement("button");
+    const detailsButton = document.createElement("a");
+
     detailsButton.className = "button";
-    detailsButton.type = "button";
     detailsButton.textContent = "Details";
+    detailsButton.href = getDetailsUrl(anime, catalogueEntry);
 
-    detailsButton.addEventListener("click", () => {
-      openDetails(anime);
-    });
+    const episodesButton = document.createElement("a");
 
-    const episodesButton = document.createElement("button");
     episodesButton.className = "button secondary";
-    episodesButton.type = "button";
 
     if (catalogueEntry) {
       episodesButton.textContent = "Episodes";
-
-      episodesButton.addEventListener("click", () => {
-        openEpisodes(anime, catalogueEntry);
-      });
+      episodesButton.href = getDetailsUrl(anime, catalogueEntry);
     } else {
       episodesButton.textContent = "Unavailable";
-      episodesButton.disabled = true;
-      episodesButton.style.opacity = ".55";
+      episodesButton.setAttribute("aria-disabled", "true");
+      episodesButton.tabIndex = -1;
+      episodesButton.style.opacity = ".5";
       episodesButton.style.cursor = "not-allowed";
       episodesButton.title =
         "No authorised episode source has been added to Peerva yet.";
+      episodesButton.addEventListener("click", event => {
+        event.preventDefault();
+      });
     }
 
     actions.append(detailsButton, episodesButton);
@@ -666,9 +808,9 @@ function renderAnime(animeList) {
   });
 }
 
-/* =====================================================
-   OPEN ANIME DETAILS
-===================================================== */
+/* =========================================
+   OPEN ANIME DETAILS PREVIEW
+========================================= */
 
 function openDetails(anime) {
   const title = getTitle(anime);
@@ -676,53 +818,53 @@ function openDetails(anime) {
 
   $("details").classList.add("show");
 
-  $("detailsPoster").src = getPoster(anime);
-  $("detailsPoster").hidden = !getPoster(anime);
+  const posterUrl = safeHttpsUrl(getPoster(anime));
+
+  $("detailsPoster").src = posterUrl;
+  $("detailsPoster").hidden = !posterUrl;
 
   $("detailsTitle").textContent = title;
 
   $("detailsMeta").textContent = [
     formatMeta(anime),
     anime.status || "",
-    anime.genres?.join(", ") || ""
+    getGenres(anime).join(", ")
   ].filter(Boolean).join(" · ");
 
   $("detailsDescription").textContent =
-    cleanDescription(anime.description) ||
+    getDescription(anime) ||
     "No description is available.";
 
   $("detailsAvailability").textContent =
     catalogueEntry
-      ? `${catalogueEntry.episodeCount || 0} authorised episode source(s) are listed on Peerva.`
+      ? `${catalogueEntry.episodeCount || 0} episode(s) are listed on Peerva.`
       : "No authorised episodes for this anime have been added to Peerva yet.";
 
   const actions = $("detailsActions");
   actions.replaceChildren();
 
-  if (catalogueEntry) {
-    const episodesLink = document.createElement("a");
+  const detailsLink = document.createElement("a");
 
-    episodesLink.className = "button";
-    episodesLink.textContent = "View Episodes";
+  detailsLink.className = "button";
+  detailsLink.textContent = "Full Anime Details";
+  detailsLink.href = getDetailsUrl(anime, catalogueEntry);
 
-    episodesLink.href =
-      `anime-details.html?animeId=${encodeURIComponent(anime.id)}` +
-      `&catalogueId=${encodeURIComponent(catalogueEntry.animeId)}` +
-      `&title=${encodeURIComponent(title)}`;
-
-    actions.appendChild(episodesLink);
-  }
+  actions.appendChild(detailsLink);
 
   if (anime.siteUrl) {
-    const sourceLink = document.createElement("a");
+    const officialUrl = safeHttpsUrl(anime.siteUrl);
 
-    sourceLink.className = "button secondary";
-    sourceLink.href = anime.siteUrl;
-    sourceLink.target = "_blank";
-    sourceLink.rel = "noopener noreferrer";
-    sourceLink.textContent = "AniList ↗";
+    if (officialUrl) {
+      const sourceLink = document.createElement("a");
 
-    actions.appendChild(sourceLink);
+      sourceLink.className = "button secondary";
+      sourceLink.href = officialUrl;
+      sourceLink.target = "_blank";
+      sourceLink.rel = "noopener noreferrer";
+      sourceLink.textContent = "AniList ↗";
+
+      actions.appendChild(sourceLink);
+    }
   }
 
   $("details").scrollIntoView({
@@ -731,24 +873,9 @@ function openDetails(anime) {
   });
 }
 
-/* =====================================================
-   OPEN EPISODES
-===================================================== */
-
-function openEpisodes(anime, catalogueEntry) {
-  const title = getTitle(anime);
-
-  const url =
-    `anime-details.html?animeId=${encodeURIComponent(anime.id)}` +
-    `&catalogueId=${encodeURIComponent(catalogueEntry.animeId)}` +
-    `&title=${encodeURIComponent(title)}`;
-
-  window.location.href = url;
-}
-
-/* =====================================================
+/* =========================================
    SEARCH ANIME
-===================================================== */
+========================================= */
 
 async function searchAnime(search) {
   const query = String(search || "").trim();
@@ -763,11 +890,9 @@ async function searchAnime(search) {
   const requestId = ++state.requestNumber;
 
   $("sectionTitle").textContent = `Search: ${query}`;
-
   $("resultCount").textContent = "Searching...";
 
   grid.replaceChildren();
-
   $("emptyMessage").style.display = "none";
 
   setStatus(`Searching AniList for "${query}"...`);
@@ -779,9 +904,7 @@ async function searchAnime(search) {
 
     if (requestId !== state.requestNumber) return;
 
-    state.anime = Array.isArray(result.anime)
-      ? result.anime
-      : [];
+    state.anime = getAnimeArray(result);
 
     renderAnime(state.anime);
 
@@ -801,15 +924,16 @@ async function searchAnime(search) {
     renderAnime([]);
 
     setStatus(
-      error.message || "Could not search anime. Please try again.",
+      error.message ||
+      "Could not search anime. Please try again.",
       true
     );
   }
 }
 
-/* =====================================================
+/* =========================================
    LOAD TRENDING / POPULAR
-===================================================== */
+========================================= */
 
 async function loadAnime(type = "trending") {
   const requestId = ++state.requestNumber;
@@ -820,12 +944,13 @@ async function loadAnime(type = "trending") {
   $("searchInput").value = "";
 
   $("sectionTitle").textContent =
-    type === "popular" ? "Popular Anime" : "Trending Anime";
+    type === "popular"
+      ? "Popular Anime"
+      : "Trending Anime";
 
   $("resultCount").textContent = "Loading anime...";
 
   grid.replaceChildren();
-
   $("emptyMessage").style.display = "none";
 
   setStatus("Loading anime from AniList...");
@@ -844,9 +969,7 @@ async function loadAnime(type = "trending") {
 
     if (requestId !== state.requestNumber) return;
 
-    state.anime = Array.isArray(result.anime)
-      ? result.anime
-      : [];
+    state.anime = getAnimeArray(result);
 
     renderAnime(state.anime);
 
@@ -873,9 +996,9 @@ async function loadAnime(type = "trending") {
   }
 }
 
-/* =====================================================
+/* =========================================
    EVENT LISTENERS
-===================================================== */
+========================================= */
 
 $("searchForm").addEventListener("submit", event => {
   event.preventDefault();
@@ -905,12 +1028,15 @@ document.querySelectorAll(".tab").forEach(button => {
   });
 });
 
-/* =====================================================
+/* =========================================
    START PEERVA ANIME
-===================================================== */
+========================================= */
 
 async function startPeervaAnime() {
+  setStatus("Connecting to Peerva...");
+
   await loadCatalogue();
+
   await loadAnime("trending");
 }
 
