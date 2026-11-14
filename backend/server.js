@@ -1519,6 +1519,253 @@ app.use((error, req, res, next) => {
 });
 
 /* =========================================================
+   PEERVA ANIME — ANIMEDOC PROVIDER
+   Search, trending, catalogue and episode information.
+
+   API key stays on the backend.
+========================================================= */
+
+const ANIMEDOC_API_URL = "https://api.animedoc.cloud";
+const ANIMEDOC_API_KEY = process.env.ANIMEDOC_API_KEY || "";
+
+async function animeDocRequest(path, options = {}) {
+    if (!ANIMEDOC_API_KEY) {
+        const error = new Error(
+            "AnimeDoc is not configured. Add ANIMEDOC_API_KEY to Render."
+        );
+        error.status = 503;
+        throw error;
+    }
+
+    const response = await fetch(
+        `${ANIMEDOC_API_URL}${path}`,
+        {
+            ...options,
+            headers: {
+                "X-API-Key": ANIMEDOC_API_KEY,
+                "Accept": "application/json",
+                ...(options.headers || {})
+            },
+            signal: AbortSignal.timeout(20000)
+        }
+    );
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        const error = new Error(
+            payload.detail ||
+            payload.message ||
+            payload.error ||
+            `AnimeDoc returned HTTP ${response.status}.`
+        );
+
+        error.status = response.status;
+        throw error;
+    }
+
+    return payload;
+}
+
+function sendAnimeDocError(res, error) {
+    console.error("AnimeDoc error:", error.message);
+
+    return res.status(error.status || 502).json({
+        success: false,
+        message: error.message || "AnimeDoc is temporarily unavailable."
+    });
+}
+
+/* =========================================================
+   ANIMEDOC SEARCH
+
+   GET /api/animedoc/search?q=naruto&page=1
+========================================================= */
+
+app.get("/api/animedoc/search", async (req, res) => {
+    try {
+        const keyword = String(req.query.q || "").trim();
+
+        const page = Math.max(
+            1,
+            Math.min(100, Number(req.query.page) || 1)
+        );
+
+        const perPage = Math.max(
+            1,
+            Math.min(20, Number(req.query.perPage) || 15)
+        );
+
+        if (keyword.length < 2) {
+            return res.status(400).json({
+                success: false,
+                message: "Enter at least two characters."
+            });
+        }
+
+        const payload = await animeDocRequest(
+            "/api/v2/anime/search/",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    keyword,
+                    page,
+                    perPage,
+                    subjectType: 0
+                })
+            }
+        );
+
+        return res.json({
+            success: true,
+            provider: "AnimeDoc",
+            data: payload.data || null
+        });
+
+    } catch (error) {
+        return sendAnimeDocError(res, error);
+    }
+});
+
+/* =========================================================
+   ANIMEDOC TRENDING
+
+   GET /api/animedoc/trending?page=0&perPage=12
+========================================================= */
+
+app.get("/api/animedoc/trending", async (req, res) => {
+    try {
+        const page = Math.max(
+            0,
+            Math.min(100, Number(req.query.page) || 0)
+        );
+
+        const perPage = Math.max(
+            1,
+            Math.min(20, Number(req.query.perPage) || 12)
+        );
+
+        const params = new URLSearchParams({
+            page: String(page),
+            perPage: String(perPage)
+        });
+
+        const payload = await animeDocRequest(
+            `/api/v2/anime/trending/?${params}`
+        );
+
+        return res.json({
+            success: true,
+            provider: "AnimeDoc",
+            data: payload.data || null
+        });
+
+    } catch (error) {
+        return sendAnimeDocError(res, error);
+    }
+});
+
+/* =========================================================
+   ANIMEDOC ANIME SECTION
+
+   GET /api/animedoc/section
+========================================================= */
+
+app.get("/api/animedoc/section", async (req, res) => {
+    try {
+        const params = new URLSearchParams({
+            id: "anime"
+        });
+
+        if (req.query.sort) {
+            params.set("sort", String(req.query.sort));
+        }
+
+        if (req.query.genre) {
+            params.set("genre", String(req.query.genre));
+        }
+
+        if (req.query.year) {
+            params.set("year", String(req.query.year));
+        }
+
+        const payload = await animeDocRequest(
+            `/api/v2/anime/section/?${params}`
+        );
+
+        return res.json({
+            success: true,
+            provider: "AnimeDoc",
+            data: payload.data || null
+        });
+
+    } catch (error) {
+        return sendAnimeDocError(res, error);
+    }
+});
+
+/* =========================================================
+   ANIMEDOC ANIME DETAILS
+
+   GET /api/animedoc/details?detailPath=...
+========================================================= */
+
+app.get("/api/animedoc/details", async (req, res) => {
+    try {
+        const detailPath = String(
+            req.query.detailPath || ""
+        ).trim();
+
+        if (!detailPath || detailPath.length > 300) {
+            return res.status(400).json({
+                success: false,
+                message: "A valid AnimeDoc detailPath is required."
+            });
+        }
+
+        const params = new URLSearchParams({
+            detailPath
+        });
+
+        const payload = await animeDocRequest(
+            `/api/v2/anime/detail/?${params}`
+        );
+
+        return res.json({
+            success: true,
+            provider: "AnimeDoc",
+            data: payload.data || null
+        });
+
+    } catch (error) {
+        return sendAnimeDocError(res, error);
+    }
+});
+
+/* =========================================================
+   ANIMEDOC PLAYBACK STATUS
+
+   Playback source access is not enabled until the
+   relevant distribution and embedding rights are verified.
+========================================================= */
+
+app.get("/api/animedoc/playback-status", (req, res) => {
+    return res.json({
+        success: true,
+        provider: "AnimeDoc",
+        playbackEnabled: false,
+        message:
+            "AnimeDoc catalogue integration is available. " +
+            "Public episode playback requires confirmation of " +
+            "the relevant distribution and embedding permissions."
+    });
+});
+
+
+/* =========================================================
    START SERVER
 ========================================================= */
 
