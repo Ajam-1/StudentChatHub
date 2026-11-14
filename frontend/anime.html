@@ -22,298 +22,109 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
+  margin:0;background:var(--bg);color:var(--text);
   font-family:Arial,Helvetica,sans-serif;
 }
 button,input{font:inherit}
 button{cursor:pointer}
 a{color:inherit;text-decoration:none}
-
 .navbar{
-  position:sticky;
-  top:0;
-  z-index:20;
-  min-height:68px;
-  padding:12px 5%;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:20px;
-  background:#141414f5;
-  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:20;min-height:68px;
+  padding:12px 5%;display:flex;align-items:center;
+  justify-content:space-between;gap:20px;
+  background:#141414f5;border-bottom:1px solid var(--border);
   backdrop-filter:blur(12px);
 }
-.logo{
-  font-size:23px;
-  font-weight:900;
-  letter-spacing:-1px;
-  white-space:nowrap;
-}
+.logo{font-size:23px;font-weight:900;letter-spacing:-1px;white-space:nowrap}
 .logo span{color:var(--accent)}
-.nav-links{
-  display:flex;
-  align-items:center;
-  gap:20px;
-  font-size:14px;
-  color:#ccc;
-}
+.nav-links{display:flex;align-items:center;gap:20px;font-size:14px;color:#ccc}
 .nav-links a:hover{color:var(--accent)}
-.search-form{
-  display:flex;
-  gap:8px;
-  align-items:center;
-}
+.search-form{display:flex;gap:8px;align-items:center}
 .search{
-  width:min(290px,32vw);
-  padding:11px 13px;
-  border:1px solid #383838;
-  border-radius:9px;
-  outline:none;
-  background:#242424;
-  color:white;
+  width:min(290px,32vw);padding:11px 13px;
+  border:1px solid #383838;border-radius:9px;
+  outline:none;background:#242424;color:white;
 }
 .search:focus{border-color:var(--accent)}
-
 main{width:min(1250px,92%);margin:auto}
 .hero{
-  margin-top:25px;
-  min-height:290px;
-  padding:36px;
-  border:1px solid #47312b;
-  border-radius:18px;
-  background:
-    radial-gradient(ellipse at 85% 20%,#ff633e32,transparent 42%),
-    linear-gradient(120deg,#30201c,#171717 70%);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:20px;
-  overflow:hidden;
+  margin-top:25px;min-height:290px;padding:36px;
+  border:1px solid #47312b;border-radius:18px;
+  background:radial-gradient(ellipse at 85% 20%,#ff633e32,transparent 42%),
+  linear-gradient(120deg,#30201c,#171717 70%);
+  display:flex;align-items:center;justify-content:space-between;
+  gap:20px;overflow:hidden;
 }
 .hero-copy{max-width:650px}
-.eyebrow{
-  color:var(--accent);
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:3px;
-  text-transform:uppercase;
-}
-.hero h1{
-  margin:15px 0;
-  font-size:clamp(36px,5vw,60px);
-  line-height:1.04;
-  letter-spacing:-2px;
-}
+.eyebrow{color:var(--accent);font-size:12px;font-weight:800;letter-spacing:3px;text-transform:uppercase}
+.hero h1{margin:15px 0;font-size:clamp(36px,5vw,60px);line-height:1.04;letter-spacing:-2px}
 .hero p{max-width:550px;color:#ccc;line-height:1.7}
 .hero-art{font-size:clamp(70px,12vw,140px);user-select:none}
-
 .button{
-  display:inline-flex;
-  justify-content:center;
-  align-items:center;
-  gap:8px;
-  padding:11px 16px;
-  border:0;
-  border-radius:8px;
-  background:var(--accent);
-  color:white;
-  font-weight:700;
-  font-size:13px;
+  display:inline-flex;justify-content:center;align-items:center;gap:8px;
+  padding:11px 16px;border:0;border-radius:8px;
+  background:var(--accent);color:white;font-weight:700;font-size:13px;
 }
 .button:hover{background:#e94e2b}
-.button.secondary{
-  background:#303030;
-  border:1px solid #444;
-}
+.button.secondary{background:#303030;border:1px solid #444}
 .button.secondary:hover{background:#3b3b3b}
-.button:disabled{
-  opacity:.5;
-  cursor:not-allowed;
-}
-
-.section-heading{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin:35px 0 18px;
-}
+.button:disabled{opacity:.5;cursor:not-allowed}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:35px 0 18px}
 .section-heading h2{margin:0;font-size:23px}
-.section-heading p{
-  color:var(--muted);
-  margin:7px 0 0;
-  font-size:13px;
-}
-
-.tabs{
-  display:flex;
-  gap:9px;
-  flex-wrap:wrap;
-  margin:22px 0;
-}
-.tab{
-  padding:9px 15px;
-  border:1px solid #383838;
-  border-radius:20px;
-  background:#202020;
-  color:#ccc;
-  font-size:13px;
-}
-.tab.active{
-  background:var(--accent);
-  color:white;
-  border-color:var(--accent);
-}
-
+.section-heading p{color:var(--muted);margin:7px 0 0;font-size:13px}
+.tabs{display:flex;gap:9px;flex-wrap:wrap;margin:22px 0}
+.tab{padding:9px 15px;border:1px solid #383838;border-radius:20px;background:#202020;color:#ccc;font-size:13px}
+.tab.active{background:var(--accent);color:white;border-color:var(--accent)}
 .status{
-  margin:16px 0;
-  padding:13px 15px;
-  background:#1d1d1d;
-  border:1px solid var(--border);
-  border-radius:10px;
-  color:#bbb;
-  font-size:13px;
-  line-height:1.6;
+  margin:16px 0;padding:13px 15px;background:#1d1d1d;
+  border:1px solid var(--border);border-radius:10px;
+  color:#bbb;font-size:13px;line-height:1.6;
 }
 .status.error{color:#ffb6a5;border-color:#704034}
-
-.anime-grid{
-  display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
-  gap:18px;
-}
+.anime-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px}
 .anime-card{
-  min-width:0;
-  overflow:hidden;
-  border:1px solid var(--border);
-  border-radius:12px;
-  background:var(--panel);
+  min-width:0;overflow:hidden;border:1px solid var(--border);
+  border-radius:12px;background:var(--panel);
   transition:transform .2s,border-color .2s;
 }
-.anime-card:hover{
-  transform:translateY(-4px);
-  border-color:#754438;
-}
+.anime-card:hover{transform:translateY(-4px);border-color:#754438}
 .poster{
-  height:245px;
-  position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:#252525;
-  overflow:hidden;
-  font-size:45px;
+  height:245px;position:relative;display:flex;
+  align-items:center;justify-content:center;
+  background:#252525;overflow:hidden;font-size:45px;
 }
-.poster img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
+.poster img{width:100%;height:100%;object-fit:cover}
 .format-tag{
-  position:absolute;
-  top:8px;
-  left:8px;
-  padding:6px 8px;
-  background:#101010df;
-  border-radius:6px;
-  font-size:10px;
-  font-weight:bold;
+  position:absolute;top:8px;left:8px;padding:6px 8px;
+  background:#101010df;border-radius:6px;font-size:10px;font-weight:bold;
 }
 .card-content{padding:12px}
-.card-content h3{
-  font-size:14px;
-  line-height:1.45;
-  margin:0 0 8px;
-  min-height:40px;
-}
-.meta{
-  color:var(--muted);
-  font-size:12px;
-  line-height:1.6;
-  min-height:37px;
-}
-.card-actions{
-  display:flex;
-  gap:7px;
-  margin-top:11px;
-}
-.card-actions .button{
-  flex:1;
-  padding:9px 5px;
-  font-size:11px;
-  min-width:0;
-  text-align:center;
-}
-.empty{
-  display:none;
-  padding:40px 15px;
-  text-align:center;
-  color:var(--muted);
-  grid-column:1/-1;
-}
-.catalogue-note{
-  color:var(--muted);
-  font-size:13px;
-  line-height:1.7;
-}
+.card-content h3{font-size:14px;line-height:1.45;margin:0 0 8px;min-height:40px}
+.meta{color:var(--muted);font-size:12px;line-height:1.6;min-height:37px}
+.card-actions{display:flex;gap:7px;margin-top:11px}
+.card-actions .button{flex:1;padding:9px 5px;font-size:11px;min-width:0;text-align:center}
+.empty{display:none;padding:40px 15px;text-align:center;color:var(--muted);grid-column:1/-1}
+.catalogue-note{color:var(--muted);font-size:13px;line-height:1.7}
 .details-section{
-  display:none;
-  margin-top:25px;
-  padding:20px;
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:14px;
-  scroll-margin-top:85px;
+  display:none;margin-top:25px;padding:20px;background:var(--panel);
+  border:1px solid var(--border);border-radius:14px;scroll-margin-top:85px;
 }
 .details-section.show{display:block}
-.details-layout{
-  display:flex;
-  gap:20px;
-  align-items:flex-start;
-}
-.details-layout img{
-  width:145px;
-  border-radius:8px;
-}
-.details-layout p{
-  color:#c4c4c4;
-  line-height:1.7;
-  font-size:14px;
-}
+.details-layout{display:flex;gap:20px;align-items:flex-start}
+.details-layout img{width:145px;border-radius:8px}
+.details-layout p{color:#c4c4c4;line-height:1.7;font-size:14px}
 .details-layout a{color:var(--accent)}
 .details-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
-
-footer{
-  margin-top:50px;
-  padding:28px 5%;
-  border-top:1px solid var(--border);
-  color:var(--muted);
-  text-align:center;
-  font-size:13px;
-  line-height:1.8;
-}
-
-@media(max-width:1050px){
-  .anime-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .poster{height:230px}
-}
+.load-more{display:none;margin:25px auto 0}
+footer{margin-top:50px;padding:28px 5%;border-top:1px solid var(--border);color:var(--muted);text-align:center;font-size:13px;line-height:1.8}
+@media(max-width:1050px){.anime-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.poster{height:230px}}
 @media(max-width:760px){
   .navbar{padding:12px 4%;flex-wrap:wrap;gap:12px}
-  .nav-links{
-    order:3;
-    width:100%;
-    justify-content:center;
-  }
+  .nav-links{order:3;width:100%;justify-content:center}
   .search-form{width:100%;order:4}
   .search-form .search{width:100%;flex:1}
-  .hero{padding:25px}
-  .hero-art{display:none}
-  .anime-grid{
-    grid-template-columns:repeat(3,minmax(0,1fr));
-    gap:12px;
-  }
+  .hero{padding:25px}.hero-art{display:none}
+  .anime-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
   .poster{height:205px}
 }
 @media(max-width:520px){
@@ -325,50 +136,32 @@ footer{
   .details-layout img{width:105px}
   .details-layout{gap:12px}
 }
-@media(max-width:350px){
-  .poster{height:180px}
-  .card-content{padding:9px}
-}
+@media(max-width:350px){.poster{height:180px}.card-content{padding:9px}}
 </style>
 </head>
-
 <body>
 
 <header class="navbar">
   <a class="logo" href="anime.html">PEERVA<span> ANIME</span></a>
-
   <nav class="nav-links">
     <a href="#home">Home</a>
     <a href="#catalogue">Explore</a>
     <a href="index.html">Peerva</a>
   </nav>
-
   <form id="searchForm" class="search-form">
-    <input
-      id="searchInput"
-      class="search"
-      type="search"
-      maxlength="100"
-      placeholder="Search anime..."
-      aria-label="Search anime"
-    >
+    <input id="searchInput" class="search" type="search" maxlength="100"
+      placeholder="Search anime..." aria-label="Search anime">
     <button class="button" type="submit">Search</button>
   </form>
 </header>
 
 <main>
-
 <section class="hero" id="home">
   <div class="hero-copy">
     <div class="eyebrow">Discover anime</div>
     <h1>Your next anime<br>starts here.</h1>
-    <p>
-      Explore anime titles, discover new favourites,
-      and find episodes available on Peerva.
-    </p>
-    <button class="button" id="exploreBtn" type="button">
-      Explore anime →
-    </button>
+    <p>Explore anime titles, discover new favourites, and find episodes available on Peerva.</p>
+    <button class="button" id="exploreBtn" type="button">Explore anime →</button>
   </div>
   <div class="hero-art" aria-hidden="true">⛩️</div>
 </section>
@@ -391,26 +184,19 @@ footer{
     Video availability depends on authorised episode sources connected to Peerva.
   </p>
 
-  <div class="status" id="status" role="status">
-    Connecting to Peerva...
-  </div>
-
+  <div class="status" id="status" role="status">Connecting to Peerva...</div>
   <div class="anime-grid" id="animeGrid"></div>
-
   <div class="empty" id="emptyMessage">
     <h3>No anime found</h3>
     <p>Try searching for another title.</p>
   </div>
+  <button class="button secondary load-more" id="loadMore" type="button">Load more</button>
 </section>
 
 <section class="details-section" id="details">
-  <button class="button secondary" id="closeDetails" type="button">
-    ✕ Close details
-  </button>
-
+  <button class="button secondary" id="closeDetails" type="button">✕ Close details</button>
   <div class="details-layout" style="margin-top:18px">
     <img id="detailsPoster" src="" alt="Anime poster">
-
     <div>
       <h2 id="detailsTitle"></h2>
       <p id="detailsMeta"></p>
@@ -422,10 +208,9 @@ footer{
 </section>
 
 <div class="status">
-  Peerva Anime uses AnimeDoc for anime discovery and metadata.
+  Peerva Anime uses AnimeDoc for discovery and metadata.
   Only authorised video sources can be added to Peerva.
 </div>
-
 </main>
 
 <footer>
@@ -437,14 +222,8 @@ footer{
 <script>
 "use strict";
 
-/* =========================================
-   PEERVA BACKEND
-========================================= */
-
 const PEERVA_BACKEND = "https://parva-backend-49br.onrender.com";
-
 const $ = id => document.getElementById(id);
-
 const grid = $("animeGrid");
 
 const state = {
@@ -452,339 +231,161 @@ const state = {
   catalogue: [],
   requestNumber: 0,
   search: "",
-  tab: "trending"
+  tab: "trending",
+  page: 0,
+  hasMore: false,
+  loadingMore: false
 };
 
-/* =========================================
-   API REQUEST
-========================================= */
-
 async function apiRequest(path) {
-  const response = await fetch(
-    `${PEERVA_BACKEND}${path}`,
-    {
-      method: "GET",
-      headers: {
-        "Accept": "application/json"
-      }
-    }
-  );
-
+  const response = await fetch(`${PEERVA_BACKEND}${path}`, {
+    method: "GET",
+    headers: {"Accept": "application/json"}
+  });
   const data = await response.json().catch(() => ({}));
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-      data.error ||
-      `Server returned HTTP ${response.status}`
-    );
+  if (!response.ok || data.success === false) {
+    throw new Error(data.message || `Server returned HTTP ${response.status}`);
   }
-
   return data;
 }
 
-/* =========================================
-   RESPONSE NORMALISATION
-   AnimeDoc response structures can be nested.
-========================================= */
+function setStatus(message, isError = false) {
+  $("status").textContent = message;
+  $("status").classList.toggle("error", isError);
+  $("status").style.display = "block";
+}
 
 function getAnimeArray(result) {
-  if (Array.isArray(result)) return result;
-
   const candidates = [
-    result?.subjects,
-    result?.subjectList,
-    result?.results,
-    result?.items,
-    result?.list,
-    result?.anime,
-    result?.trending,
-    result?.data?.subjects,
-    result?.data?.subjectList,
-    result?.data?.results,
     result?.data?.items,
+    result?.data?.subjects,
+    result?.data?.results,
     result?.data?.list,
-    result?.data?.anime,
-    result?.data?.trending,
-    result?.data?.data?.subjects,
-    result?.data?.data?.subjectList,
-    result?.data?.data?.results,
-    result?.data?.data?.items,
-    result?.data?.data?.list,
-    result?.data?.data
+    result?.items,
+    result?.subjects,
+    result?.results,
+    result?.anime
   ];
 
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) return candidate;
+  for (const item of candidates) {
+    if (Array.isArray(item)) return item;
   }
-
-  return [];
+  return Array.isArray(result?.data) ? result.data : [];
 }
 
 function getCatalogueArray(result) {
-  if (Array.isArray(result)) return result;
-
-  const candidates = [
-    result?.anime,
-    result?.catalogue,
-    result?.items,
-    result?.data
-  ];
-
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) return candidate;
-  }
-
+  if (Array.isArray(result?.anime)) return result.anime;
+  if (Array.isArray(result?.catalogue)) return result.catalogue;
   return [];
 }
 
-/* =========================================
-   STATUS
-========================================= */
-
-function setStatus(message, isError = false) {
-  const box = $("status");
-
-  box.textContent = message;
-  box.classList.toggle("error", isError);
-  box.style.display = "block";
-}
-
-/* =========================================
-   ANIMEDOC DATA HELPERS
-========================================= */
-
 function getTitle(anime) {
-  return (
-    anime.title ||
-    anime.name ||
-    anime.subjectTitle ||
-    anime.titleEnglish ||
-    anime.englishTitle ||
-    anime.title_en ||
-    anime.subjectName ||
-    "Unknown anime"
-  );
+  return anime.title || anime.subjectTitle || anime.name || "Unknown title";
 }
 
 function getPoster(anime) {
-  return (
-    anime.cover ||
-    anime.coverUrl ||
-    anime.coverImage ||
-    anime.poster ||
-    anime.image ||
-    anime.imageUrl ||
-    anime.thumbnail ||
-    anime.pic ||
-    anime.img ||
-    ""
-  );
+  return anime.cover || anime.subjectCover || anime.coverUrl ||
+    anime.poster || anime.image || "";
 }
 
 function getDetailPath(anime) {
-  return (
-    anime.detailPath ||
-    anime.detail_path ||
-    anime.path ||
-    anime.urlPath ||
-    anime.slug ||
-    ""
-  );
+  return anime.detailPath || anime.detail_path || "";
 }
 
 function getSubjectId(anime) {
-  return (
-    anime.subjectId ||
-    anime.subject_id ||
-    anime.id ||
-    anime.subject?.subjectId ||
-    ""
-  );
+  return anime.subjectId || anime.subject_id || "";
 }
 
-function getFormat(anime) {
-  return (
-    anime.subjectTypeName ||
-    anime.typeName ||
-    anime.format ||
-    anime.category ||
-    "ANIME"
-  );
+/* AnimeDoc subjectType 1 is the anime category in its returned catalogue.
+   Do not include films, dramas or unrelated television listings. */
+function isAnime(anime) {
+  const type = Number(anime.subjectType);
+  return type === 1;
 }
 
 function getYear(anime) {
-  return (
-    anime.year ||
-    anime.releaseYear ||
-    anime.seasonYear ||
-    anime.startDate?.year ||
-    ""
-  );
-}
-
-function getEpisodes(anime) {
-  return (
-    anime.totalEpisodes ||
-    anime.episodeCount ||
-    anime.episodes ||
-    anime.totalEpisode ||
-    ""
-  );
+  const date = anime.releaseDate || anime.release_date || "";
+  if (date) return String(date).slice(0, 4);
+  return anime.year || "";
 }
 
 function getScore(anime) {
-  const score = anime.score || anime.rating || anime.averageScore;
-
-  if (!score) return "";
-
-  return `⭐ ${score}`;
+  const score = anime.rating || anime.score || "";
+  return score ? `⭐ ${score}` : "";
 }
 
 function getDescription(anime) {
-  const value =
-    anime.description ||
-    anime.introduction ||
-    anime.intro ||
-    anime.summary ||
-    "";
-
-  const temporary = document.createElement("textarea");
-  temporary.innerHTML = String(value);
-
-  return temporary.value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const value = anime.description || anime.introduction ||
+    anime.intro || anime.summary || "";
+  const temp = document.createElement("textarea");
+  temp.innerHTML = String(value);
+  return temp.value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
-
-function formatMeta(anime) {
-  const parts = [];
-
-  const year = getYear(anime);
-  const episodes = getEpisodes(anime);
-
-  if (getFormat(anime)) parts.push(getFormat(anime));
-  if (year) parts.push(year);
-  if (episodes) parts.push(`${episodes} episodes`);
-
-  return parts.join(" · ") || "Anime";
-}
-
-/* =========================================
-   SAFE URL
-========================================= */
 
 function safeHttpsUrl(value) {
-  if (typeof value !== "string" || !value.trim()) {
-    return "";
-  }
-
+  if (typeof value !== "string" || !value.trim()) return "";
   try {
     const url = new URL(value);
-
-    if (url.protocol !== "https:") {
-      return "";
-    }
-
-    return url.href;
-  } catch (_) {
+    return url.protocol === "https:" ? url.href : "";
+  } catch {
     return "";
   }
 }
-
-/* =========================================
-   FIND PEERVA CATALOGUE ENTRY
-========================================= */
 
 function findCatalogueEntry(anime) {
   const subjectId = String(getSubjectId(anime));
   const detailPath = String(getDetailPath(anime));
 
-  return state.catalogue.find(item => {
-    return (
-      (subjectId && String(item.subjectId || "") === subjectId) ||
-      (detailPath && String(item.detailPath || "") === detailPath)
-    );
-  }) || null;
+  return state.catalogue.find(item =>
+    (subjectId && String(item.subjectId || "") === subjectId) ||
+    (detailPath && String(item.detailPath || "") === detailPath)
+  ) || null;
 }
-
-/* =========================================
-   ANIMEDOC DETAILS PAGE URL
-========================================= */
 
 function getDetailsUrl(anime, catalogueEntry = null) {
   const params = new URLSearchParams();
-
   const detailPath = getDetailPath(anime);
   const subjectId = getSubjectId(anime);
-  const title = getTitle(anime);
-  const poster = getPoster(anime);
+  const poster = safeHttpsUrl(getPoster(anime));
 
-  if (detailPath) {
-    params.set("detailPath", detailPath);
-  }
-
-  if (subjectId) {
-    params.set("subjectId", String(subjectId));
-  }
-
-  params.set("title", title);
-
-  if (poster) {
-    params.set("poster", poster);
-  }
+  if (detailPath) params.set("detailPath", detailPath);
+  if (subjectId) params.set("subjectId", subjectId);
+  params.set("title", getTitle(anime));
+  if (poster) params.set("poster", poster);
 
   if (catalogueEntry?.animeId) {
-    params.set("catalogueId", String(catalogueEntry.animeId));
+    params.set("catalogueId", catalogueEntry.animeId);
   }
 
   return `anime-details.html?${params.toString()}`;
 }
-
-/* =========================================
-   LOAD PEERVA EPISODE CATALOGUE
-========================================= */
 
 async function loadCatalogue() {
   try {
     const result = await apiRequest("/api/anime");
     state.catalogue = getCatalogueArray(result);
   } catch (error) {
-    console.warn(
-      "Could not load Peerva episode catalogue:",
-      error
-    );
-
+    console.warn("Peerva episode catalogue unavailable:", error.message);
     state.catalogue = [];
   }
 }
 
-/* =========================================
-   RENDER ANIME CARDS
-========================================= */
-
-function renderAnime(animeList) {
-  grid.replaceChildren();
+function renderAnime(animeList, append = false) {
+  if (!append) grid.replaceChildren();
 
   const validAnime = animeList.filter(anime =>
-    anime &&
-    (getSubjectId(anime) || getDetailPath(anime))
+    anime && isAnime(anime) && getDetailPath(anime)
   );
 
   $("emptyMessage").style.display =
-    validAnime.length ? "none" : "block";
+    !append && !validAnime.length ? "block" : "none";
 
-  $("resultCount").textContent =
-    `${validAnime.length} anime found`;
-
-  if (!validAnime.length) {
+  if (!append && !validAnime.length) {
     $("emptyMessage").querySelector("p").textContent =
       state.search
-        ? "No anime matched your search. Try another title."
-        : "No anime could be loaded right now.";
-
-    return;
+        ? "No matching anime found. Try another title."
+        : "No anime were returned. Try again later.";
   }
 
   validAnime.forEach(anime => {
@@ -800,7 +401,6 @@ function renderAnime(animeList) {
 
     if (posterUrl) {
       const image = document.createElement("img");
-
       image.src = posterUrl;
       image.alt = titleText;
       image.loading = "lazy";
@@ -808,7 +408,6 @@ function renderAnime(animeList) {
         image.remove();
         poster.textContent = "⛩️";
       };
-
       poster.appendChild(image);
     } else {
       poster.textContent = "⛩️";
@@ -816,8 +415,7 @@ function renderAnime(animeList) {
 
     const tag = document.createElement("span");
     tag.className = "format-tag";
-    tag.textContent = getFormat(anime);
-
+    tag.textContent = "ANIME";
     poster.appendChild(tag);
 
     const content = document.createElement("div");
@@ -829,27 +427,21 @@ function renderAnime(animeList) {
 
     const meta = document.createElement("div");
     meta.className = "meta";
-
     meta.textContent = [
-      formatMeta(anime),
-      getScore(anime)
-    ].filter(Boolean).join(" · ");
+      getYear(anime),
+      getScore(anime),
+      anime.genre || ""
+    ].filter(Boolean).join(" · ") || "Anime";
 
     const actions = document.createElement("div");
     actions.className = "card-actions";
 
-    const detailsButton = document.createElement("button");
-
-    detailsButton.type = "button";
+    const detailsButton = document.createElement("a");
     detailsButton.className = "button";
     detailsButton.textContent = "Details";
-
-    detailsButton.addEventListener("click", () => {
-      openDetails(anime);
-    });
+    detailsButton.href = getDetailsUrl(anime, catalogueEntry);
 
     const episodesButton = document.createElement("a");
-
     episodesButton.className = "button secondary";
 
     if (catalogueEntry) {
@@ -859,136 +451,20 @@ function renderAnime(animeList) {
       episodesButton.textContent = "Unavailable";
       episodesButton.setAttribute("aria-disabled", "true");
       episodesButton.tabIndex = -1;
+      episodesButton.title = "No authorised Peerva episode source has been added.";
       episodesButton.style.opacity = ".5";
-      episodesButton.style.cursor = "not-allowed";
-      episodesButton.title =
-        "No authorised episode source has been added to Peerva yet.";
-
-      episodesButton.addEventListener("click", event => {
-        event.preventDefault();
-      });
+      episodesButton.addEventListener("click", event => event.preventDefault());
     }
 
     actions.append(detailsButton, episodesButton);
-
     content.append(title, meta, actions);
     card.append(poster, content);
-
     grid.appendChild(card);
   });
+
+  $("resultCount").textContent =
+    `${grid.children.length} anime shown`;
 }
-
-/* =========================================
-   LOAD ANIMEDOC DETAILS
-========================================= */
-
-async function loadAnimeDetails(anime) {
-  const detailPath = getDetailPath(anime);
-
-  if (!detailPath) {
-    return anime;
-  }
-
-  try {
-    const result = await apiRequest(
-      `/api/animedoc/details?detailPath=${encodeURIComponent(detailPath)}`
-    );
-
-    const details =
-      result?.data?.data ||
-      result?.data ||
-      result?.result ||
-      result;
-
-    return {
-      ...anime,
-      ...(details && typeof details === "object" ? details : {})
-    };
-
-  } catch (error) {
-    console.warn("Could not load AnimeDoc details:", error);
-    return anime;
-  }
-}
-
-/* =========================================
-   OPEN ANIME DETAILS PREVIEW
-========================================= */
-
-async function openDetails(anime) {
-  $("details").classList.add("show");
-
-  $("detailsTitle").textContent = getTitle(anime);
-  $("detailsMeta").textContent = "Loading anime information...";
-  $("detailsDescription").textContent = "";
-  $("detailsAvailability").textContent = "";
-
-  const posterUrl = safeHttpsUrl(getPoster(anime));
-
-  $("detailsPoster").src = posterUrl;
-  $("detailsPoster").hidden = !posterUrl;
-
-  const actions = $("detailsActions");
-  actions.replaceChildren();
-
-  $("details").scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-
-  const details = await loadAnimeDetails(anime);
-
-  $("detailsTitle").textContent = getTitle(details);
-
-  $("detailsMeta").textContent = [
-    formatMeta(details),
-    details.status || "",
-    Array.isArray(details.genres)
-      ? details.genres.join(", ")
-      : ""
-  ].filter(Boolean).join(" · ");
-
-  $("detailsDescription").textContent =
-    getDescription(details) ||
-    "No description is available.";
-
-  const catalogueEntry = findCatalogueEntry(anime);
-
-  $("detailsAvailability").textContent =
-    catalogueEntry
-      ? `${catalogueEntry.episodeCount || 0} episode(s) are listed on Peerva.`
-      : "No authorised episodes for this anime have been added to Peerva yet.";
-
-  const detailsLink = document.createElement("a");
-
-  detailsLink.className = "button";
-  detailsLink.textContent = "Full Anime Details";
-  detailsLink.href = getDetailsUrl(anime, catalogueEntry);
-
-  actions.appendChild(detailsLink);
-
-  if (details.officialSite || details.siteUrl) {
-    const officialUrl = safeHttpsUrl(
-      details.officialSite || details.siteUrl
-    );
-
-    if (officialUrl) {
-      const sourceLink = document.createElement("a");
-
-      sourceLink.className = "button secondary";
-      sourceLink.href = officialUrl;
-      sourceLink.target = "_blank";
-      sourceLink.rel = "noopener noreferrer";
-      sourceLink.textContent = "Official Site ↗";
-
-      actions.appendChild(sourceLink);
-    }
-  }
-}
-
-/* =========================================
-   SEARCH ANIME USING ANIMEDOC
-========================================= */
 
 async function searchAnime(search) {
   const query = String(search || "").trim();
@@ -998,168 +474,148 @@ async function searchAnime(search) {
     return;
   }
 
-  state.search = query;
-
   const requestId = ++state.requestNumber;
+  state.search = query;
+  state.page = 1;
+  state.hasMore = false;
 
   $("sectionTitle").textContent = `Search: ${query}`;
   $("resultCount").textContent = "Searching...";
-
+  $("loadMore").style.display = "none";
   grid.replaceChildren();
   $("emptyMessage").style.display = "none";
-
   setStatus(`Searching AnimeDoc for "${query}"...`);
 
   try {
     const result = await apiRequest(
-      `/api/animedoc/search?q=${encodeURIComponent(query)}`
+      `/api/animedoc/search?q=${encodeURIComponent(query)}&page=1&perPage=20`
     );
 
     if (requestId !== state.requestNumber) return;
 
-    state.anime = getAnimeArray(result);
-
+    state.anime = getAnimeArray(result).filter(isAnime);
     renderAnime(state.anime);
 
     setStatus(
       state.anime.length
         ? `Found ${state.anime.length} anime matching "${query}".`
-        : `No anime were found for "${query}". Try another search.`
+        : `No anime matched "${query}". Try another title.`
     );
-
   } catch (error) {
     if (requestId !== state.requestNumber) return;
-
-    console.error("AnimeDoc search error:", error);
-
     state.anime = [];
     renderAnime([]);
-
-    setStatus(
-      error.message ||
-      "Could not search AnimeDoc. Please try again.",
-      true
-    );
+    setStatus(error.message || "AnimeDoc search failed.", true);
   }
 }
 
-/* =========================================
-   LOAD TRENDING / POPULAR FROM ANIMEDOC
-========================================= */
+async function loadAnime(type = "trending", append = false) {
+  if (state.loadingMore) return;
 
-async function loadAnime(type = "trending") {
-  const requestId = ++state.requestNumber;
+  const requestId = append ? state.requestNumber : ++state.requestNumber;
 
-  state.search = "";
-  state.tab = type;
+  if (!append) {
+    state.search = "";
+    state.tab = type;
+    state.page = 0;
+    state.hasMore = false;
+    $("searchInput").value = "";
+    $("sectionTitle").textContent =
+      type === "popular" ? "Popular Anime" : "Trending Anime";
+    $("resultCount").textContent = "Loading anime...";
+    grid.replaceChildren();
+    $("emptyMessage").style.display = "none";
 
-  $("searchInput").value = "";
+    document.querySelectorAll(".tab").forEach(button => {
+      button.classList.toggle("active", button.dataset.type === type);
+    });
+  }
 
-  $("sectionTitle").textContent =
-    type === "popular"
-      ? "Popular Anime"
-      : "Trending Anime";
+  const page = append ? state.page + 1 : 0;
+  state.loadingMore = true;
+  $("loadMore").disabled = true;
+  $("loadMore").textContent = "Loading...";
 
-  $("resultCount").textContent = "Loading anime...";
-
-  grid.replaceChildren();
-  $("emptyMessage").style.display = "none";
-
-  setStatus("Loading anime from AnimeDoc...");
-
-  document.querySelectorAll(".tab").forEach(button => {
-    button.classList.toggle(
-      "active",
-      button.dataset.type === type
-    );
-  });
+  setStatus(append ? "Loading more anime..." : "Loading anime from AnimeDoc...");
 
   try {
     let endpoint;
 
     if (type === "popular") {
-      endpoint = "/api/animedoc/section";
+      endpoint = `/api/animedoc/section?page=${page}&perPage=12`;
     } else {
-      endpoint = "/api/animedoc/trending";
+      endpoint = `/api/animedoc/trending?page=${page}&perPage=12`;
     }
 
     const result = await apiRequest(endpoint);
-
     if (requestId !== state.requestNumber) return;
 
-    state.anime = getAnimeArray(result);
+    const items = getAnimeArray(result).filter(isAnime);
 
-    renderAnime(state.anime);
+    if (append) {
+      const existing = new Set(state.anime.map(item => String(getSubjectId(item))));
+      const unique = items.filter(item =>
+        !existing.has(String(getSubjectId(item)))
+      );
+      state.anime.push(...unique);
+      renderAnime(unique, true);
+    } else {
+      state.anime = items;
+      renderAnime(items);
+    }
+
+    state.page = page;
+    state.hasMore = result?.data?.pager?.hasMore === true;
+
+    $("loadMore").style.display =
+      state.hasMore ? "block" : "none";
 
     setStatus(
       state.anime.length
         ? `Loaded ${state.anime.length} anime from AnimeDoc.`
-        : "AnimeDoc did not return any anime. Try again later."
+        : "No anime were returned by this AnimeDoc section."
     );
 
   } catch (error) {
-    if (requestId !== state.requestNumber) return;
-
-    console.error("AnimeDoc loading error:", error);
-
-    state.anime = [];
-    renderAnime([]);
-
-    setStatus(
-      error.message ||
-      "Could not connect to AnimeDoc. Please try again.",
-      true
-    );
+    if (requestId === state.requestNumber) {
+      setStatus(error.message || "Could not load anime.", true);
+    }
+  } finally {
+    state.loadingMore = false;
+    $("loadMore").disabled = false;
+    $("loadMore").textContent = "Load more";
   }
 }
 
-/* =========================================
-   EVENT LISTENERS
-========================================= */
-
 $("searchForm").addEventListener("submit", event => {
   event.preventDefault();
-
   searchAnime($("searchInput").value);
-
-  $("catalogue").scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
+  $("catalogue").scrollIntoView({behavior:"smooth",block:"start"});
 });
 
 $("exploreBtn").addEventListener("click", () => {
-  $("catalogue").scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
+  $("catalogue").scrollIntoView({behavior:"smooth",block:"start"});
 });
 
 $("closeDetails").addEventListener("click", () => {
   $("details").classList.remove("show");
 });
 
-document.querySelectorAll(".tab").forEach(button => {
-  button.addEventListener("click", () => {
-    loadAnime(button.dataset.type);
-  });
+$("loadMore").addEventListener("click", () => {
+  if (state.hasMore) loadAnime(state.tab, true);
 });
 
-/* =========================================
-   START PEERVA ANIME
-========================================= */
+document.querySelectorAll(".tab").forEach(button => {
+  button.addEventListener("click", () => loadAnime(button.dataset.type));
+});
 
 async function startPeervaAnime() {
   setStatus("Connecting to Peerva...");
-
   await loadCatalogue();
-
   await loadAnime("trending");
 }
 
 startPeervaAnime();
-
 </script>
-
 </body>
 </html>
