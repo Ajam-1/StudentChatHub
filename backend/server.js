@@ -1493,30 +1493,6 @@ app.delete(
     }
 );
 
-/* =========================================================
-   ERROR HANDLING
-========================================================= */
-
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: "Route not found.",
-        path: req.originalUrl
-    });
-});
-
-app.use((error, req, res, next) => {
-    console.error("Unhandled server error:", error);
-
-    if (res.headersSent) {
-        return next(error);
-    }
-
-    res.status(500).json({
-        success: false,
-        message: "An unexpected server error occurred."
-    });
-});
 
 /* =========================================================
    PEERVA ANIME — ANIMEDOC PROVIDER
@@ -1764,6 +1740,30 @@ app.get("/api/animedoc/playback-status", (req, res) => {
     });
 });
 
+/* =========================================================
+   ERROR HANDLING
+========================================================= */
+
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: "Route not found.",
+        path: req.originalUrl
+    });
+});
+
+app.use((error, req, res, next) => {
+    console.error("Unhandled server error:", error);
+
+    if (res.headersSent) {
+        return next(error);
+    }
+
+    res.status(500).json({
+        success: false,
+        message: "An unexpected server error occurred."
+    });
+});
 
 /* =========================================================
    START SERVER
